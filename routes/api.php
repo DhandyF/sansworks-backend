@@ -31,12 +31,12 @@ use App\Http\Controllers\API\DashboardController;
 
 // Public Authentication Routes (no authentication required)
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 });
 
 // Authenticated Routes (require authentication, accessible by all roles)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     // Authentication Routes
     Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
@@ -55,8 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard Routes (all authenticated users)
     Route::prefix('dashboard')->group(function () {
-        Route::get('/', [DashboardController::class, 'index']);
-        Route::get('/trends', [DashboardController::class, 'trends']);
+        Route::get('/', [DashboardController::class, 'index'])->middleware('throttle:60');
+        Route::get('/trends', [DashboardController::class, 'trends'])->middleware('throttle:20');
     });
 
     // Master Data Routes (Read-only for all, Create/Update/Delete for Manager+)
@@ -130,10 +130,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Statistics Routes (Read-only for all)
     Route::prefix('daily-statistics')->group(function () {
-        Route::get('/', [DailyStatisticController::class, 'index']);
-        Route::get('/{dailyStatistic}', [DailyStatisticController::class, 'show']);
-        Route::get('/summary', [DailyStatisticController::class, 'summary']);
-        Route::get('/latest', [DailyStatisticController::class, 'latest']);
+        Route::get('/', [DailyStatisticController::class, 'index'])->middleware('throttle:60');
+        Route::get('/{dailyStatistic}', [DailyStatisticController::class, 'show'])->middleware('throttle:60');
+        Route::get('/summary', [DailyStatisticController::class, 'summary'])->middleware('throttle:20');
+        Route::get('/latest', [DailyStatisticController::class, 'latest'])->middleware('throttle:60');
     });
 
     // Activity Logs Routes (Read-only for all)
