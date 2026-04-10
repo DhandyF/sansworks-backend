@@ -3,16 +3,19 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\QCResultRequest;
+use App\Http\Resources\QCResultResource;
 use App\Models\QCResult;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Request;
 
 class QCResultController extends Controller
 {
     /**
      * Display a listing of QC results.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): AnonymousResourceCollection
     {
         $query = QCResult::with([
             'depositCuttingResult.cuttingDistribution',
@@ -46,41 +49,16 @@ class QCResultController extends Controller
 
         $qcResults = $query->orderBy('qc_date', 'desc')->orderBy('created_at', 'desc')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $qcResults
-        ]);
+        return QCResultResource::collection($qcResults);
     }
 
     /**
      * Store a newly created QC result.
      */
-    public function store(Request $request): JsonResponse
+    public function store(QCResultRequest $request): QCResultResource
     {
-        $validated = $request->validate([
-            'deposit_cutting_result_id' => 'required|exists:deposit_cutting_results,id',
-            'tailor_id' => 'required|exists:tailors,id',
-            'brand_id' => 'required|exists:brands,id',
-            'article_id' => 'required|exists:articles,id',
-            'size_id' => 'required|exists:sizes,id',
-            'total_products' => 'required|integer|min:1',
-            'total_to_repair' => 'required|integer|min:0',
-            'qc_date' => 'required|date',
-            'qc_by' => 'nullable|exists:users,id',
-            'defect_details' => 'nullable|array',
-            'notes' => 'nullable|string',
-        ]);
-
-        // Validate that total_to_repair doesn't exceed total_products
-        if ($validated['total_to_repair'] > $validated['total_products']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Total to repair cannot exceed total products'
-            ], 400);
-        }
-
         // Check if QC already exists for this deposit
-        $existingQC = QCResult::where('deposit_cutting_result_id', $validated['deposit_cutting_result_id'])->first();
+        $existingQC = QCResult::where('deposit_cutting_result_id', $request->deposit_cutting_result_id)->first();
         if ($existingQC) {
             return response()->json([
                 'success' => false,
@@ -88,34 +66,31 @@ class QCResultController extends Controller
             ], 400);
         }
 
+        $validated = $request->validated();
         $validated['created_by'] = auth()->id();
         $validated['updated_by'] = auth()->id();
         $validated['qc_by'] = $validated['qc_by'] ?? auth()->id();
 
         $qcResult = QCResult::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'QC result created successfully',
-            'data' => $qcResult->load([
-                'depositCuttingResult.cuttingDistribution',
-                'tailor',
-                'brand',
-                'article',
-                'size',
-                'qcBy',
-                'createdBy',
-                'updatedBy'
-            ])
-        ], 201);
+        return new QCResultResource($qcResult->load([
+            'depositCuttingResult.cuttingDistribution',
+            'tailor',
+            'brand',
+            'article',
+            'size',
+            'qcBy',
+            'createdBy',
+            'updatedBy'
+        ]));
     }
 
     /**
      * Display the specified QC result.
      */
-    public function show(QCResult $qcResult): JsonResponse
+    public function show(QCResult $qcResult): QCResultResource
     {
-        $qcResult->load([
+        return new QCResultResource($qcResult->load([
             'depositCuttingResult.cuttingDistribution',
             'tailor',
             'brand',
@@ -125,57 +100,29 @@ class QCResultController extends Controller
             'createdBy',
             'updatedBy',
             'repairDistributions'
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'data' => $qcResult
-        ]);
+        ]));
     }
 
     /**
      * Update the specified QC result.
      */
-    public function update(Request $request, QCResult $qcResult): JsonResponse
+    public function update(QCResultRequest $request, QCResult $qcResult): QCResultResource
     {
-        $validated = $request->validate([
-            'total_products' => 'sometimes|required|integer|min:1',
-            'total_to_repair' => 'sometimes|required|integer|min:0',
-            'qc_date' => 'sometimes|required|date',
-            'qc_by' => 'nullable|exists:users,id',
-            'defect_details' => 'nullable|array',
-            'notes' => 'nullable|string',
-        ]);
-
-        // Validate that total_to_repair doesn't exceed total_products
-        $totalProducts = $validated['total_products'] ?? $qcResult->total_products;
-        $totalToRepair = $validated['total_to_repair'] ?? $qcResult->total_to_repair;
-
-        if ($totalToRepair > $totalProducts) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Total to repair cannot exceed total products'
-            ], 400);
-        }
-
+        $validated = $request->validated();
         $validated['updated_by'] = auth()->id();
 
         $qcResult->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'QC result updated successfully',
-            'data' => $qcResult->fresh()->load([
-                'depositCuttingResult.cuttingDistribution',
-                'tailor',
-                'brand',
-                'article',
-                'size',
-                'qcBy',
-                'createdBy',
-                'updatedBy'
-            ])
-        ]);
+        return new QCResultResource($qcResult->fresh()->load([
+            'depositCuttingResult.cuttingDistribution',
+            'tailor',
+            'brand',
+            'article',
+            'size',
+            'qcBy',
+            'createdBy',
+            'updatedBy'
+        ]));
     }
 
     /**

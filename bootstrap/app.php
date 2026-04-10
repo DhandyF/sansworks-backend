@@ -15,6 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
+
+        // Register middleware aliases
+        $middleware->alias([
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'manager' => \App\Http\Middleware\ManagerMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

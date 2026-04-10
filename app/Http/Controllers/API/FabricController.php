@@ -3,27 +3,29 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\FabricRequest;
+use App\Http\Resources\FabricResource;
 use App\Models\Fabric;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class FabricController extends Controller
 {
     /**
      * Display a listing of fabrics.
      */
-    public function index(Request $request): JsonResponse
+    public function index(): AnonymousResourceCollection
     {
         $query = Fabric::query();
 
         // Filter by unit
-        if ($request->has('unit')) {
-            $query->where('unit', $request->unit);
+        if (request()->has('unit')) {
+            $query->where('unit', request()->unit);
         }
 
         // Search by name or color
-        if ($request->has('search')) {
-            $search = $request->search;
+        if (request()->has('search')) {
+            $search = request()->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('color', 'like', "%{$search}%");
@@ -31,78 +33,48 @@ class FabricController extends Controller
         }
 
         // Filter by low stock (less than 100 units)
-        if ($request->has('low_stock') && $request->boolean('low_stock')) {
+        if (request()->has('low_stock') && request()->boolean('low_stock')) {
             $query->where('total_quantity', '<', 100);
         }
 
         $fabrics = $query->orderBy('name')->orderBy('color')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $fabrics
-        ]);
+        return FabricResource::collection($fabrics);
     }
 
     /**
      * Store a newly created fabric.
      */
-    public function store(Request $request): JsonResponse
+    public function store(FabricRequest $request): FabricResource
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'color' => 'nullable|string|max:255',
-            'unit' => 'required|in:pcs,meter,yard,roll',
-            'total_quantity' => 'required|numeric|min:0',
-            'price_per_unit' => 'required|numeric|min:0',
-        ]);
-
+        $validated = $request->validated();
         $validated['created_by'] = auth()->id();
         $validated['updated_by'] = auth()->id();
 
         $fabric = Fabric::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Fabric created successfully',
-            'data' => $fabric->load('createdBy', 'updatedBy')
-        ], 201);
+        return new FabricResource($fabric);
     }
 
     /**
      * Display the specified fabric.
      */
-    public function show(Fabric $fabric): JsonResponse
+    public function show(Fabric $fabric): FabricResource
     {
-        $fabric->load(['createdBy', 'updatedBy', 'cuttingResults']);
-
-        return response()->json([
-            'success' => true,
-            'data' => $fabric
-        ]);
+        return new FabricResource($fabric->load(['createdBy', 'updatedBy', 'cuttingResults']));
     }
 
     /**
      * Update the specified fabric.
      */
-    public function update(Request $request, Fabric $fabric): JsonResponse
+    public function update(FabricRequest $request, Fabric $fabric): FabricResource
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'color' => 'nullable|string|max:255',
-            'unit' => 'sometimes|required|in:pcs,meter,yard,roll',
-            'total_quantity' => 'sometimes|required|numeric|min:0',
-            'price_per_unit' => 'sometimes|required|numeric|min:0',
-        ]);
-
+        $validated = $request->validated();
         $validated['updated_by'] = auth()->id();
 
         $fabric->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Fabric updated successfully',
-            'data' => $fabric->fresh()->load('createdBy', 'updatedBy')
-        ]);
+        return new FabricResource($fabric->fresh());
     }
 
     /**
@@ -143,7 +115,7 @@ class FabricController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Fabric quantity adjusted successfully',
-            'data' => $fabric->fresh()
+            'data' => new FabricResource($fabric->fresh())
         ]);
     }
 

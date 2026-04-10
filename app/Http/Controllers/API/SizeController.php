@@ -3,75 +3,46 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SizeRequest;
+use App\Http\Resources\SizeResource;
 use App\Models\Size;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class SizeController extends Controller
 {
     /**
      * Display a listing of sizes.
      */
-    public function index(): JsonResponse
+    public function index(): AnonymousResourceCollection
     {
         $sizes = Size::orderBy('sort_order')->orderBy('name')->get();
-        return response()->json([
-            'success' => true,
-            'data' => $sizes
-        ]);
+        return SizeResource::collection($sizes);
     }
 
     /**
      * Store a newly created size.
      */
-    public function store(Request $request): JsonResponse
+    public function store(SizeRequest $request): SizeResource
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'abbreviation' => 'required|string|max:10|unique:sizes',
-            'sort_order' => 'nullable|integer|min:0',
-            'is_active' => 'nullable|boolean',
-        ]);
-
-        $size = Size::create($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Size created successfully',
-            'data' => $size
-        ], 201);
+        $size = Size::create($request->validated());
+        return new SizeResource($size);
     }
 
     /**
      * Display the specified size.
      */
-    public function show(Size $size): JsonResponse
+    public function show(Size $size): SizeResource
     {
-        return response()->json([
-            'success' => true,
-            'data' => $size
-        ]);
+        return new SizeResource($size);
     }
 
     /**
      * Update the specified size.
      */
-    public function update(Request $request, Size $size): JsonResponse
+    public function update(SizeRequest $request, Size $size): SizeResource
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'abbreviation' => 'sometimes|required|string|max:10|unique:sizes,abbreviation,' . $size->id,
-            'sort_order' => 'nullable|integer|min:0',
-            'is_active' => 'nullable|boolean',
-        ]);
-
-        $size->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Size updated successfully',
-            'data' => $size->fresh()
-        ]);
+        $size->update($request->validated());
+        return new SizeResource($size->fresh());
     }
 
     /**
