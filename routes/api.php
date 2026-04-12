@@ -17,6 +17,7 @@ use App\Http\Controllers\API\DepositRepairResultController;
 use App\Http\Controllers\API\DailyStatisticController;
 use App\Http\Controllers\API\ActivityLogController;
 use App\Http\Controllers\API\DashboardController;
+use App\Http\Controllers\API\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -226,5 +227,15 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::put('/{dailyStatistic}', [DailyStatisticController::class, 'update']);
         Route::delete('/{dailyStatistic}', [DailyStatisticController::class, 'destroy']);
         Route::post('/{dailyStatistic}/recalculate', [DailyStatisticController::class, 'recalculate']);
+    });
+
+    // User Management
+    Route::prefix('users')->group(function () {
+        Route::get('/', [UserController::class, 'index']);
+        Route::get('/{user}', [UserController::class, 'show']);
+        Route::put('/{user}', [UserController::class, 'update']);
+        Route::patch('/{user}/role', [UserController::class, 'updateRole']);
+        Route::patch('/{user}/status', [UserController::class, 'toggleStatus']);
+        Route::delete('/{user}', [UserController::class, 'destroy']);
     });
 });
