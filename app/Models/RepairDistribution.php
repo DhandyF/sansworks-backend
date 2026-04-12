@@ -12,6 +12,8 @@ class RepairDistribution extends Model
 {
     use LogsActivity, SoftDeletes;
 
+    protected $table = 'repair_distributions';
+
     protected $fillable = [
         'qc_result_id',
         'tailor_id',
@@ -50,7 +52,7 @@ class RepairDistribution extends Model
      */
     public function qcResult(): BelongsTo
     {
-        return $this->belongsTo(QCResult::class);
+        return $this->belongsTo(QCResult::class, 'qc_result_id');
     }
 
     /**
@@ -106,6 +108,6 @@ class RepairDistribution extends Model
      */
     public function depositRepairResults(): HasMany
     {
-        return $this->hasMany(DepositRepairResult::class);
+        return $this->hasMany(DepositRepairResult::class, 'repair_distribution_id');
     }
 }

@@ -11,6 +11,8 @@ class DepositRepairResult extends Model
 {
     use LogsActivity, SoftDeletes;
 
+    protected $table = 'deposit_repair_results';
+
     protected $fillable = [
         'repair_distribution_id',
         'tailor_id',
@@ -56,7 +58,7 @@ class DepositRepairResult extends Model
      */
     public function repairDistribution(): BelongsTo
     {
-        return $this->belongsTo(RepairDistribution::class);
+        return $this->belongsTo(RepairDistribution::class, 'repair_distribution_id');
     }
 
     /**

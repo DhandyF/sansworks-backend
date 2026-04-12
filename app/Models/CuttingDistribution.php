@@ -12,6 +12,8 @@ class CuttingDistribution extends Model
 {
     use LogsActivity, SoftDeletes;
 
+    protected $table = 'cutting_distributions';
+
     protected $fillable = [
         'cutting_result_id',
         'tailor_id',
@@ -49,7 +51,7 @@ class CuttingDistribution extends Model
      */
     public function cuttingResult(): BelongsTo
     {
-        return $this->belongsTo(CuttingResult::class);
+        return $this->belongsTo(CuttingResult::class, 'cutting_result_id');
     }
 
     /**
@@ -105,6 +107,6 @@ class CuttingDistribution extends Model
      */
     public function depositCuttingResults(): HasMany
     {
-        return $this->hasMany(DepositCuttingResult::class);
+        return $this->hasMany(DepositCuttingResult::class, 'cutting_distribution_id');
     }
 }

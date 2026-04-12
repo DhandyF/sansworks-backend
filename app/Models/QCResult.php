@@ -12,6 +12,8 @@ class QCResult extends Model
 {
     use LogsActivity, SoftDeletes;
 
+    protected $table = 'qc_results';
+
     protected $fillable = [
         'deposit_cutting_result_id',
         'tailor_id',
@@ -55,7 +57,7 @@ class QCResult extends Model
      */
     public function depositCuttingResult(): BelongsTo
     {
-        return $this->belongsTo(DepositCuttingResult::class);
+        return $this->belongsTo(DepositCuttingResult::class, 'deposit_cutting_result_id');
     }
 
     /**
@@ -119,6 +121,6 @@ class QCResult extends Model
      */
     public function repairDistributions(): HasMany
     {
-        return $this->hasMany(RepairDistribution::class);
+        return $this->hasMany(RepairDistribution::class, 'qc_result_id');
     }
 }

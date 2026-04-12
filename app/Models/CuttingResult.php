@@ -12,6 +12,8 @@ class CuttingResult extends Model
 {
     use LogsActivity, SoftDeletes;
 
+    protected $table = 'cutting_results';
+
     protected $fillable = [
         'fabric_id',
         'brand_id',
@@ -86,6 +88,6 @@ class CuttingResult extends Model
      */
     public function cuttingDistributions(): HasMany
     {
-        return $this->hasMany(CuttingDistribution::class);
+        return $this->hasMany(CuttingDistribution::class, 'cutting_result_id');
     }
 }
