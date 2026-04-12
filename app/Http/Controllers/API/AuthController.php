@@ -18,8 +18,8 @@ class AuthController extends Controller
     public function register(AuthRequest $request): JsonResponse
     {
         $user = User::create([
-            'name' => $request->name,
-            'username' => $request->username,
+            'name' => $request->name, // Display name
+            'username' => $request->username, // Login username
             'email' => $request->email,
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
