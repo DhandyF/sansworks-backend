@@ -21,8 +21,12 @@ return [
 
     'allowed_origins' => [
         'http://localhost:5173',    # Vue.js dev server
+        'http://localhost:5174',    # Vue.js dev server (alt)
+        'http://localhost:5175',    # Vue.js dev server (alt)
         'http://localhost:3000',    # Alternative dev server
         'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174',
+        'http://127.0.0.1:5175',
         'http://127.0.0.1:3000',
         env('FRONTEND_URL'),        # Production frontend URL
     ],
