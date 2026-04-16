@@ -45,7 +45,10 @@ class CuttingResultController extends Controller
         $query->orderBy('cutting_date', 'desc')->orderBy('created_at', 'desc');
 
         if ($perPage === 'all') {
-            $items = $query->get();
+            $items = $query->get()
+                ->map(fn($item) => (new \App\Http\Resources\CuttingResultResource($item))->resolve())
+                ->values()
+                ->all();
             return response()->json([
                 'success' => true,
                 'data' => $items,
