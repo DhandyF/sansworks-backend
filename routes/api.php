@@ -92,41 +92,41 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Production Flow Routes (Read-only for all, Create/Update/Delete for Manager+)
     Route::prefix('cutting-results')->group(function () {
         Route::get('/', [CuttingResultController::class, 'index']);
-        Route::get('/{cuttingResult}', [CuttingResultController::class, 'show']);
         Route::get('/statistics', [CuttingResultController::class, 'statistics']);
+        Route::get('/{cuttingResult}', [CuttingResultController::class, 'show']);
     });
 
     Route::prefix('cutting-distributions')->group(function () {
         Route::get('/', [CuttingDistributionController::class, 'index']);
-        Route::get('/{cuttingDistribution}', [CuttingDistributionController::class, 'show']);
-        Route::get('/overdue', [CuttingDistributionController::class, 'overdue']);
         Route::get('/statistics', [CuttingDistributionController::class, 'statistics']);
+        Route::get('/overdue', [CuttingDistributionController::class, 'overdue']);
+        Route::get('/{cuttingDistribution}', [CuttingDistributionController::class, 'show']);
     });
 
     Route::prefix('deposit-cutting-results')->group(function () {
         Route::get('/', [DepositCuttingResultController::class, 'index']);
-        Route::get('/{depositCuttingResult}', [DepositCuttingResultController::class, 'show']);
         Route::get('/statistics', [DepositCuttingResultController::class, 'statistics']);
+        Route::get('/{depositCuttingResult}', [DepositCuttingResultController::class, 'show']);
     });
 
     // Quality Control Flow Routes (Read-only for all, Create/Update/Delete for Manager+)
     Route::prefix('qc-results')->group(function () {
         Route::get('/', [QCResultController::class, 'index']);
-        Route::get('/{qcResult}', [QCResultController::class, 'show']);
         Route::get('/statistics', [QCResultController::class, 'statistics']);
+        Route::get('/{qcResult}', [QCResultController::class, 'show']);
     });
 
     Route::prefix('repair-distributions')->group(function () {
         Route::get('/', [RepairDistributionController::class, 'index']);
-        Route::get('/{repairDistribution}', [RepairDistributionController::class, 'show']);
-        Route::get('/overdue', [RepairDistributionController::class, 'overdue']);
         Route::get('/statistics', [RepairDistributionController::class, 'statistics']);
+        Route::get('/overdue', [RepairDistributionController::class, 'overdue']);
+        Route::get('/{repairDistribution}', [RepairDistributionController::class, 'show']);
     });
 
     Route::prefix('deposit-repair-results')->group(function () {
         Route::get('/', [DepositRepairResultController::class, 'index']);
-        Route::get('/{depositRepairResult}', [DepositRepairResultController::class, 'show']);
         Route::get('/statistics', [DepositRepairResultController::class, 'statistics']);
+        Route::get('/{depositRepairResult}', [DepositRepairResultController::class, 'show']);
     });
 
     // Statistics Routes (Read-only for all)
