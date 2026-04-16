@@ -16,7 +16,10 @@ class CuttingResultController extends Controller
     {
         $perPage = $this->getPerPage($request);
 
-        $query = CuttingResult::with(['fabric', 'brand', 'article', 'size', 'createdBy', 'updatedBy']);
+        $query = CuttingResult::with([
+            'fabric', 'brand', 'article', 'size', 'createdBy', 'updatedBy',
+            'cuttingDistributions'
+        ]);
 
         if ($request->has('from_date') && $request->has('to_date')) {
             $query->whereBetween('cutting_date', [$request->from_date, $request->to_date]);

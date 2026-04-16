@@ -14,6 +14,11 @@ class CuttingResultResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $totalDistributed = 0;
+        if ($this->relationLoaded('cuttingDistributions')) {
+            $totalDistributed = $this->cuttingDistributions->sum('total_cutting');
+        }
+
         return [
             'id' => $this->id,
             'fabric_id' => $this->fabric_id,
@@ -21,9 +26,9 @@ class CuttingResultResource extends JsonResource
             'article_id' => $this->article_id,
             'size_id' => $this->size_id,
             'total_cutting' => $this->total_cutting,
-            'total_distributed' => $this->total_distributed,
-            'total_deposited' => $this->total_deposited,
-            'remaining' => $this->remaining,
+            'total_distributed' => $totalDistributed,
+            'total_deposited' => 0,
+            'remaining' => $this->total_cutting - $totalDistributed,
             'cutting_date' => $this->cutting_date->toISOString(),
             'batch_number' => $this->batch_number,
             'notes' => $this->notes,
