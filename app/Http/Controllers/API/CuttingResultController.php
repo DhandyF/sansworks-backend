@@ -59,7 +59,7 @@ class CuttingResultController extends Controller
         }
 
         $result = $query->paginate($perPage);
-        return $this->paginatedResponse($result);
+        return $this->paginatedResponse($result, \App\Http\Resources\CuttingResultResource::class);
     }
 
     /**
