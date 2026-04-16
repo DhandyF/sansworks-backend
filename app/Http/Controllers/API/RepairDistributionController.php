@@ -3,17 +3,19 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Models\RepairDistribution;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class RepairDistributionController extends Controller
 {
-    /**
-     * Display a listing of repair distributions.
-     */
+    use HasPagination;
+
     public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = RepairDistribution::with([
             'qcResult.depositCuttingResult',
             'tailor',
@@ -24,22 +26,18 @@ class RepairDistributionController extends Controller
             'updatedBy'
         ]);
 
-        // Filter by date range
         if ($request->has('from_date') && $request->has('to_date')) {
             $query->whereBetween('taken_date', [$request->from_date, $request->to_date]);
         }
 
-        // Filter by tailor
         if ($request->has('tailor_id')) {
             $query->where('tailor_id', $request->tailor_id);
         }
 
-        // Filter by repair type
         if ($request->has('repair_type')) {
             $query->where('repair_type', $request->repair_type);
         }
 
-        // Filter by status (has deposit or not)
         if ($request->has('status')) {
             if ($request->status === 'pending') {
                 $query->whereDoesntHave('depositRepairResults');
@@ -48,17 +46,22 @@ class RepairDistributionController extends Controller
             }
         }
 
-        // Search by repair number
         if ($request->has('search')) {
             $query->where('repair_number', 'like', "%{$request->search}%");
         }
 
-        $distributions = $query->orderBy('taken_date', 'desc')->orderBy('created_at', 'desc')->get();
+        $query->orderBy('taken_date', 'desc')->orderBy('created_at', 'desc');
 
-        return response()->json([
-            'success' => true,
-            'data' => $distributions
-        ]);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result);
     }
 
     /**

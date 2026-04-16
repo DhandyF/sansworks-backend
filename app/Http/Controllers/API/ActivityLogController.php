@@ -3,51 +3,53 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class ActivityLogController extends Controller
 {
-    /**
-     * Display a listing of activity logs.
-     */
+    use HasPagination;
+
     public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = ActivityLog::with(['user']);
 
-        // Filter by user
         if ($request->has('user_id')) {
             $query->where('user_id', $request->user_id);
         }
 
-        // Filter by action
         if ($request->has('action')) {
             $query->where('action', $request->action);
         }
 
-        // Filter by table name
         if ($request->has('table_name')) {
             $query->where('table_name', $request->table_name);
         }
 
-        // Filter by date range
         if ($request->has('from_date') && $request->has('to_date')) {
             $query->whereBetween('created_at', [$request->from_date, $request->to_date]);
         }
 
-        // Search by record ID
         if ($request->has('record_id')) {
             $query->where('record_id', $request->record_id);
         }
 
-        $logs = $query->orderBy('created_at', 'desc')
-            ->paginate($request->get('per_page', 50));
+        $query->orderBy('created_at', 'desc');
 
-        return response()->json([
-            'success' => true,
-            'data' => $logs
-        ]);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result);
     }
 
     /**

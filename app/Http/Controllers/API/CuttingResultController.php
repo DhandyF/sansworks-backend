@@ -3,55 +3,57 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Models\CuttingResult;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class CuttingResultController extends Controller
 {
-    /**
-     * Display a listing of cutting results.
-     */
+    use HasPagination;
+
     public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = CuttingResult::with(['fabric', 'brand', 'article', 'size', 'createdBy', 'updatedBy']);
 
-        // Filter by date range
         if ($request->has('from_date') && $request->has('to_date')) {
             $query->whereBetween('cutting_date', [$request->from_date, $request->to_date]);
         }
 
-        // Filter by fabric
         if ($request->has('fabric_id')) {
             $query->where('fabric_id', $request->fabric_id);
         }
 
-        // Filter by brand
         if ($request->has('brand_id')) {
             $query->where('brand_id', $request->brand_id);
         }
 
-        // Filter by article
         if ($request->has('article_id')) {
             $query->where('article_id', $request->article_id);
         }
 
-        // Filter by size
         if ($request->has('size_id')) {
             $query->where('size_id', $request->size_id);
         }
 
-        // Search by batch number
         if ($request->has('search')) {
             $query->where('batch_number', 'like', "%{$request->search}%");
         }
 
-        $cuttingResults = $query->orderBy('cutting_date', 'desc')->orderBy('created_at', 'desc')->get();
+        $query->orderBy('cutting_date', 'desc')->orderBy('created_at', 'desc');
 
-        return response()->json([
-            'success' => true,
-            'data' => $cuttingResults
-        ]);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result);
     }
 
     /**

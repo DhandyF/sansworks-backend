@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Models\DailyStatistic;
 use App\Jobs\CalculateDailyStatistics;
 use Illuminate\Http\Request;
@@ -10,25 +11,30 @@ use Illuminate\Http\JsonResponse;
 
 class DailyStatisticController extends Controller
 {
-    /**
-     * Display a listing of daily statistics.
-     */
+    use HasPagination;
+
     public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = DailyStatistic::with(['createdBy', 'updatedBy']);
 
-        // Filter by date range
         if ($request->has('from_date') && $request->has('to_date')) {
             $query->whereBetween('statistic_date', [$request->from_date, $request->to_date]);
         }
 
-        // Order by date descending
-        $statistics = $query->orderBy('statistic_date', 'desc')->get();
+        $query->orderBy('statistic_date', 'desc');
 
-        return response()->json([
-            'success' => true,
-            'data' => $statistics
-        ]);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result);
     }
 
     /**

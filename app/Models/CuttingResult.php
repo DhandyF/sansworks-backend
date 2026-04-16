@@ -90,4 +90,36 @@ class CuttingResult extends Model
     {
         return $this->hasMany(CuttingDistribution::class, 'cutting_result_id');
     }
+
+    /**
+     * Get total distributed (sum of all cutting distributions).
+     */
+    public function getTotalDistributedAttribute(): int
+    {
+        return $this->cuttingDistributions()->sum('total_cutting');
+    }
+
+    /**
+     * Get remaining cutting that hasn't been distributed yet.
+     */
+    public function getRemainingAttribute(): int
+    {
+        return $this->total_cutting - $this->total_distributed;
+    }
+
+    /**
+     * Get total deposited (completed deposits).
+     */
+    public function getTotalDepositedAttribute(): int
+    {
+        return $this->cuttingDistributions()
+            ->whereHas('depositCuttingResults', function ($query) {
+                $query->where('status', 'completed');
+            })
+            ->with('depositCuttingResults')
+            ->get()
+            ->sum(function ($distribution) {
+                return $distribution->depositCuttingResults->sum('total_deposited');
+            });
+    }
 }

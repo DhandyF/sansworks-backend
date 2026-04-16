@@ -3,24 +3,24 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    /**
-     * Display a listing of users.
-     */
-    public function index(Request $request): AnonymousResourceCollection
+    use HasPagination;
+
+    public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = User::query();
 
-        // Search by name or username
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -29,19 +29,26 @@ class UserController extends Controller
             });
         }
 
-        // Filter by role
         if ($request->has('role')) {
             $query->where('role', $request->role);
         }
 
-        // Filter by status
         if ($request->has('status')) {
             $query->where('is_active', $request->boolean('status'));
         }
 
-        $users = $query->orderBy('created_at', 'desc')->get();
+        $query->orderBy('created_at', 'desc');
 
-        return UserResource::collection($users);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result, UserResource::class);
     }
 
     /**

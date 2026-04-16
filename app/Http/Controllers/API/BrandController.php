@@ -3,25 +3,25 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class BrandController extends Controller
 {
-    /**
-     * Display a listing of brands.
-     */
+    use HasPagination;
+
     public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = Brand::query();
 
-        // Filter by active status
         if ($request->has('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        // Search by name or code
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -30,12 +30,18 @@ class BrandController extends Controller
             });
         }
 
-        $brands = $query->orderBy('name')->get();
+        $query->orderBy('name');
 
-        return response()->json([
-            'success' => true,
-            'data' => $brands
-        ]);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result);
     }
 
     /**

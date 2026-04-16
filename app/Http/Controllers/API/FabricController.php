@@ -2,44 +2,57 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Http\Concerns\HasPagination;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FabricRequest;
 use App\Http\Resources\FabricResource;
 use App\Models\Fabric;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Request;
 
 class FabricController extends Controller
 {
+    use HasPagination;
+
     /**
      * Display a listing of fabrics.
      */
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = Fabric::query();
 
-        // Filter by unit
-        if (request()->has('unit')) {
-            $query->where('unit', request()->unit);
+        if ($request->has('unit')) {
+            $query->where('unit', $request->unit);
         }
 
-        // Search by name or color
-        if (request()->has('search')) {
-            $search = request()->search;
+        if ($request->has('search')) {
+            $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('color', 'like', "%{$search}%");
             });
         }
 
-        // Filter by low stock (less than 100 units)
-        if (request()->has('low_stock') && request()->boolean('low_stock')) {
+        if ($request->has('low_stock') && $request->boolean('low_stock')) {
             $query->where('total_quantity', '<', 100);
         }
 
-        $fabrics = $query->orderBy('name')->orderBy('color')->get();
+        $query->orderBy('name')->orderBy('color');
 
-        return FabricResource::collection($fabrics);
+        if ($perPage === 'all') {
+            $items = $query->get()->map(fn($item) => (new FabricResource($item))->resolve())->values()->all();
+
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $fabrics = $query->paginate($perPage);
+
+        return $this->paginatedResponse($fabrics, FabricResource::class);
     }
 
     /**

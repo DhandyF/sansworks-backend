@@ -3,25 +3,25 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Models\Article;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class ArticleController extends Controller
 {
-    /**
-     * Display a listing of articles.
-     */
+    use HasPagination;
+
     public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = Article::query();
 
-        // Filter by active status
         if ($request->has('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        // Search by name or code
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -31,12 +31,18 @@ class ArticleController extends Controller
             });
         }
 
-        $articles = $query->orderBy('name')->get();
+        $query->orderBy('name');
 
-        return response()->json([
-            'success' => true,
-            'data' => $articles
-        ]);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result);
     }
 
     /**

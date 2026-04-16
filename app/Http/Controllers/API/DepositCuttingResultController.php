@@ -3,17 +3,19 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Models\DepositCuttingResult;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class DepositCuttingResultController extends Controller
 {
-    /**
-     * Display a listing of deposit cutting results.
-     */
+    use HasPagination;
+
     public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = DepositCuttingResult::with([
             'cuttingDistribution.cuttingResult.fabric',
             'tailor',
@@ -24,32 +26,34 @@ class DepositCuttingResultController extends Controller
             'updatedBy'
         ]);
 
-        // Filter by date range
         if ($request->has('from_date') && $request->has('to_date')) {
             $query->whereBetween('deposit_date', [$request->from_date, $request->to_date]);
         }
 
-        // Filter by status
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
-        // Filter by tailor
         if ($request->has('tailor_id')) {
             $query->where('tailor_id', $request->tailor_id);
         }
 
-        // Filter by brand
         if ($request->has('brand_id')) {
             $query->where('brand_id', $request->brand_id);
         }
 
-        $deposits = $query->orderBy('deposit_date', 'desc')->orderBy('created_at', 'desc')->get();
+        $query->orderBy('deposit_date', 'desc')->orderBy('created_at', 'desc');
 
-        return response()->json([
-            'success' => true,
-            'data' => $deposits
-        ]);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result);
     }
 
     /**

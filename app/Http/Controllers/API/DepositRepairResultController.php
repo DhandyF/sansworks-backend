@@ -3,17 +3,19 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Models\DepositRepairResult;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class DepositRepairResultController extends Controller
 {
-    /**
-     * Display a listing of deposit repair results.
-     */
+    use HasPagination;
+
     public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = DepositRepairResult::with([
             'repairDistribution.qcResult',
             'tailor',
@@ -24,27 +26,30 @@ class DepositRepairResultController extends Controller
             'updatedBy'
         ]);
 
-        // Filter by date range
         if ($request->has('from_date') && $request->has('to_date')) {
             $query->whereBetween('deposit_date', [$request->from_date, $request->to_date]);
         }
 
-        // Filter by quality rating
         if ($request->has('repair_quality_rating')) {
             $query->where('repair_quality_rating', $request->repair_quality_rating);
         }
 
-        // Filter by tailor
         if ($request->has('tailor_id')) {
             $query->where('tailor_id', $request->tailor_id);
         }
 
-        $deposits = $query->orderBy('deposit_date', 'desc')->orderBy('created_at', 'desc')->get();
+        $query->orderBy('deposit_date', 'desc')->orderBy('created_at', 'desc');
 
-        return response()->json([
-            'success' => true,
-            'data' => $deposits
-        ]);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result);
     }
 
     /**

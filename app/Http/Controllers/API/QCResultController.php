@@ -3,20 +3,22 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Http\Requests\QCResultRequest;
 use App\Http\Resources\QCResultResource;
 use App\Models\QCResult;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class QCResultController extends Controller
 {
-    /**
-     * Display a listing of QC results.
-     */
-    public function index(Request $request): AnonymousResourceCollection
+    use HasPagination;
+
+    public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = QCResult::with([
             'depositCuttingResult.cuttingDistribution',
             'tailor',
@@ -28,17 +30,14 @@ class QCResultController extends Controller
             'updatedBy'
         ]);
 
-        // Filter by date range
         if ($request->has('from_date') && $request->has('to_date')) {
             $query->whereBetween('qc_date', [$request->from_date, $request->to_date]);
         }
 
-        // Filter by tailor
         if ($request->has('tailor_id')) {
             $query->where('tailor_id', $request->tailor_id);
         }
 
-        // Filter by quality (has defects or not)
         if ($request->has('has_defects')) {
             if ($request->boolean('has_defects')) {
                 $query->where('total_to_repair', '>', 0);
@@ -47,15 +46,24 @@ class QCResultController extends Controller
             }
         }
 
-        $qcResults = $query->orderBy('qc_date', 'desc')->orderBy('created_at', 'desc')->get();
+        $query->orderBy('qc_date', 'desc')->orderBy('created_at', 'desc');
 
-        return QCResultResource::collection($qcResults);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result, QCResultResource::class);
     }
 
     /**
      * Store a newly created QC result.
      */
-    public function store(QCResultRequest $request): QCResultResource
+    public function store(QCResultRequest $request): QCResultResource|JsonResponse
     {
         // Check if QC already exists for this deposit
         $existingQC = QCResult::where('deposit_cutting_result_id', $request->deposit_cutting_result_id)->first();

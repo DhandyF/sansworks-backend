@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Concerns\HasPagination;
 use App\Models\CuttingDistribution;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -10,11 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class CuttingDistributionController extends Controller
 {
-    /**
-     * Display a listing of cutting distributions.
-     */
+    use HasPagination;
+
     public function index(Request $request): JsonResponse
     {
+        $perPage = $this->getPerPage($request);
+
         $query = CuttingDistribution::with([
             'cuttingResult.fabric',
             'tailor',
@@ -25,17 +27,14 @@ class CuttingDistributionController extends Controller
             'updatedBy'
         ]);
 
-        // Filter by date range
         if ($request->has('from_date') && $request->has('to_date')) {
             $query->whereBetween('taken_date', [$request->from_date, $request->to_date]);
         }
 
-        // Filter by tailor
         if ($request->has('tailor_id')) {
             $query->where('tailor_id', $request->tailor_id);
         }
 
-        // Filter by status (has deposit or not)
         if ($request->has('status')) {
             if ($request->status === 'pending') {
                 $query->whereDoesntHave('depositCuttingResults');
@@ -44,22 +43,26 @@ class CuttingDistributionController extends Controller
             }
         }
 
-        // Filter by brand
         if ($request->has('brand_id')) {
             $query->where('brand_id', $request->brand_id);
         }
 
-        // Search by distribution number
         if ($request->has('search')) {
             $query->where('distribution_number', 'like', "%{$request->search}%");
         }
 
-        $distributions = $query->orderBy('taken_date', 'desc')->orderBy('created_at', 'desc')->get();
+        $query->orderBy('taken_date', 'desc')->orderBy('created_at', 'desc');
 
-        return response()->json([
-            'success' => true,
-            'data' => $distributions
-        ]);
+        if ($perPage === 'all') {
+            $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ]);
+        }
+
+        $result = $query->paginate($perPage);
+        return $this->paginatedResponse($result);
     }
 
     /**
