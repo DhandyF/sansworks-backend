@@ -132,9 +132,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Statistics Routes (Read-only for all)
     Route::prefix('daily-statistics')->group(function () {
         Route::get('/', [DailyStatisticController::class, 'index'])->middleware('throttle:60');
-        Route::get('/{dailyStatistic}', [DailyStatisticController::class, 'show'])->middleware('throttle:60');
         Route::get('/summary', [DailyStatisticController::class, 'summary'])->middleware('throttle:20');
         Route::get('/latest', [DailyStatisticController::class, 'latest'])->middleware('throttle:60');
+        Route::get('/{dailyStatistic}', [DailyStatisticController::class, 'show'])->middleware('throttle:60');
     });
 
     // Activity Logs Routes (Read-only for all)
