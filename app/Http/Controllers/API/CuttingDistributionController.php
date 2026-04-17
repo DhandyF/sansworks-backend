@@ -24,7 +24,8 @@ class CuttingDistributionController extends Controller
             'article',
             'size',
             'createdBy',
-            'updatedBy'
+            'updatedBy',
+            'depositCuttingResults'
         ]);
 
         if ($request->has('from_date') && $request->has('to_date')) {
