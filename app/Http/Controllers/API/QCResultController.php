@@ -27,7 +27,8 @@ class QCResultController extends Controller
             'size',
             'qcBy',
             'createdBy',
-            'updatedBy'
+            'updatedBy',
+            'repairDistributions'
         ]);
 
         if ($request->has('from_date') && $request->has('to_date')) {
@@ -49,7 +50,7 @@ class QCResultController extends Controller
         $query->orderBy('qc_date', 'desc')->orderBy('created_at', 'desc');
 
         if ($perPage === 'all') {
-            $items = $query->get();
+            $items = $query->get()->map(fn($item) => $item->toArray())->values()->all();
             return response()->json([
                 'success' => true,
                 'data' => $items,
@@ -60,10 +61,7 @@ class QCResultController extends Controller
         return $this->paginatedResponse($result, QCResultResource::class);
     }
 
-    /**
-     * Store a newly created QC result.
-     */
-    public function store(QCResultRequest $request): QCResultResource|JsonResponse
+    public function store(QCResultRequest $request): JsonResponse
     {
         // Check if QC already exists for this deposit
         $existingQC = QCResult::where('deposit_cutting_result_id', $request->deposit_cutting_result_id)->first();
@@ -75,13 +73,14 @@ class QCResultController extends Controller
         }
 
         $validated = $request->validated();
-        $validated['created_by'] = auth()->id();
-        $validated['updated_by'] = auth()->id();
-        $validated['qc_by'] = $validated['qc_by'] ?? auth()->id();
+        $userId = auth()->id() ?? 1;
+        $validated['created_by'] = $userId;
+        $validated['updated_by'] = $userId;
+        $validated['qc_by'] = $validated['qc_by'] ?? $userId;
 
         $qcResult = QCResult::create($validated);
 
-        return new QCResultResource($qcResult->load([
+        $resource = new QCResultResource($qcResult->load([
             'depositCuttingResult.cuttingDistribution',
             'tailor',
             'brand',
@@ -91,6 +90,12 @@ class QCResultController extends Controller
             'createdBy',
             'updatedBy'
         ]));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'QC result created successfully',
+            'data' => $resource
+        ]);
     }
 
     /**
