@@ -16,7 +16,16 @@ class TailorController extends Controller
     {
         $perPage = $this->getPerPage($request);
 
-        $query = Tailor::query();
+        $query = Tailor::with([
+            'cuttingDistributions' => function ($q) {
+                $q->with(['depositCuttingResults' => function ($q2) {
+                    $q2->with(['qcResults']);
+                }])->orderBy('taken_date', 'desc');
+            },
+            'cuttingDistributions.brand',
+            'cuttingDistributions.article',
+            'cuttingDistributions.size',
+        ]);
 
         if ($request->has('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
@@ -33,7 +42,10 @@ class TailorController extends Controller
         $query->orderBy('name');
 
         if ($perPage === 'all') {
-            $items = $query->get();
+            $items = $query->get()
+                ->map(fn($item) => (new \App\Http\Resources\TailorResource($item))->resolve())
+                ->values()
+                ->all();
             return response()->json([
                 'success' => true,
                 'data' => $items,
@@ -41,7 +53,7 @@ class TailorController extends Controller
         }
 
         $result = $query->paginate($perPage);
-        return $this->paginatedResponse($result);
+        return $this->paginatedResponse($result, \App\Http\Resources\TailorResource::class);
     }
 
     /**
