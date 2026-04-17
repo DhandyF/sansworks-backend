@@ -25,6 +25,12 @@ class TailorController extends Controller
             'cuttingDistributions.brand',
             'cuttingDistributions.article',
             'cuttingDistributions.size',
+            'repairDistributions' => function ($q) {
+                $q->with(['depositRepairResults']);
+            },
+            'repairDistributions.brand',
+            'repairDistributions.article',
+            'repairDistributions.size',
         ]);
 
         if ($request->has('is_active')) {
