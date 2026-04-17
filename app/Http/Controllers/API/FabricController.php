@@ -39,7 +39,7 @@ class FabricController extends Controller
             $query->where('total_quantity', '<', 100);
         }
 
-        $query->orderBy('name')->orderBy('color');
+        $query->orderBy('created_at', 'desc');
 
         if ($perPage === 'all') {
             $items = $query->get()->map(fn($item) => (new FabricResource($item))->resolve())->values()->all();
