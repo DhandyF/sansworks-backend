@@ -23,7 +23,8 @@ class RepairDistributionController extends Controller
             'article',
             'size',
             'createdBy',
-            'updatedBy'
+            'updatedBy',
+            'depositRepairResults'
         ]);
 
         if ($request->has('from_date') && $request->has('to_date')) {
@@ -53,7 +54,7 @@ class RepairDistributionController extends Controller
         $query->orderBy('taken_date', 'desc')->orderBy('created_at', 'desc');
 
         if ($perPage === 'all') {
-            $items = $query->get();
+            $items = $query->get()->map(fn($item) => $item->toArray())->values()->all();
             return response()->json([
                 'success' => true,
                 'data' => $items,

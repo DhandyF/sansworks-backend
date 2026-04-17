@@ -23,7 +23,8 @@ class DepositCuttingResultController extends Controller
             'article',
             'size',
             'createdBy',
-            'updatedBy'
+            'updatedBy',
+            'qcResults'
         ]);
 
         if ($request->has('from_date') && $request->has('to_date')) {
@@ -73,12 +74,20 @@ class DepositCuttingResultController extends Controller
             'quality_notes' => 'nullable|string',
         ]);
 
-        // Check if deposit already exists for this distribution
-        $existingDeposit = DepositCuttingResult::where('cutting_distribution_id', $validated['cutting_distribution_id'])->first();
-        if ($existingDeposit) {
+        // Get the distribution and calculate total already deposited
+        $distribution = \App\Models\CuttingDistribution::findOrFail($validated['cutting_distribution_id']);
+        $totalDistributed = $distribution->total_cutting;
+        
+        $totalDeposited = DepositCuttingResult::where('cutting_distribution_id', $validated['cutting_distribution_id'])
+            ->sum('total_sewing_result');
+        
+        $remaining = $totalDistributed - $totalDeposited;
+        
+        // Check if deposit would exceed available
+        if ($validated['total_sewing_result'] > $remaining) {
             return response()->json([
                 'success' => false,
-                'message' => 'Deposit already exists for this distribution'
+                'message' => 'Total sewing result (' . $validated['total_sewing_result'] . ') exceeds available cutting (' . $remaining . ')'
             ], 400);
         }
 

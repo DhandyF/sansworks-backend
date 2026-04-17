@@ -69,12 +69,20 @@ class DepositRepairResultController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // Check if deposit already exists for this distribution
-        $existingDeposit = DepositRepairResult::where('repair_distribution_id', $validated['repair_distribution_id'])->first();
-        if ($existingDeposit) {
+        // Get the distribution and calculate total already repaired
+        $distribution = \App\Models\RepairDistribution::findOrFail($validated['repair_distribution_id']);
+        $totalToRepair = $distribution->total_to_repair;
+        
+        $totalRepaired = DepositRepairResult::where('repair_distribution_id', $validated['repair_distribution_id'])
+            ->sum('total_repaired');
+        
+        $remaining = $totalToRepair - $totalRepaired;
+        
+        // Check if deposit would exceed available
+        if ($validated['total_repaired'] > $remaining) {
             return response()->json([
                 'success' => false,
-                'message' => 'Deposit already exists for this repair distribution'
+                'message' => 'Total repaired (' . $validated['total_repaired'] . ') exceeds available repair (' . $remaining . ')'
             ], 400);
         }
 
