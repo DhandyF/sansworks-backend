@@ -6,26 +6,44 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            // Drop the unique constraint first
-            $table->dropUnique(['email']);
-            // Make the column nullable
-            $table->string('email')->nullable()->change();
-            // Add unique constraint back (but allowing nulls)
-            $table->unique('email');
-        });
+        if (Schema::hasTable('users')) {
+            if (Schema::hasColumn('users', 'email')) {
+                $sm = Schema::getConnection()->getDoctrineSchemaManager();
+                $indexes = $sm->listTableIndexes('users');
+
+                if (isset($indexes['users_email_unique'])) {
+                    Schema::table('users', function (Blueprint $table) {
+                        $table->dropUnique(['email']);
+                    });
+                }
+
+                Schema::table('users', function (Blueprint $table) {
+                    $table->string('email')->nullable()->change();
+                });
+
+                if (!isset($indexes['users_email_unique'])) {
+                    Schema::table('users', function (Blueprint $table) {
+                        $table->unique('email');
+                    });
+                }
+            }
+
+            if (Schema::hasColumn('users', 'name')) {
+                Schema::table('users', function (Blueprint $table) {
+                    $table->string('name')->nullable()->change();
+                });
+            }
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('name')->nullable(false)->change();
+        });
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropUnique(['email']);
             $table->string('email')->nullable(false)->change();
