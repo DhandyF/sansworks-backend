@@ -22,7 +22,7 @@ return new class extends Migration
             $table->unsignedInteger('cutting_left')->nullable();
             $table->decimal('sewing_price', 12, 2)->nullable();
             $table->date('deposit_date');
-            $table->enum('status', ['done', 'in_progress', 'overdue'])->default('done');
+            $table->string('status')->default('done');
             $table->text('quality_notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');

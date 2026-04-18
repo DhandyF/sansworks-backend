@@ -21,7 +21,7 @@ return new class extends Migration
             $table->date('deposit_date');
             $table->unsignedInteger('total_repaired')->default(0);
             $table->unsignedInteger('product_to_repair_left')->nullable();
-            $table->enum('repair_quality_rating', ['excellent', 'good', 'fair', 'poor'])->default('good');
+            $table->string('repair_quality_rating')->default('good');
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');

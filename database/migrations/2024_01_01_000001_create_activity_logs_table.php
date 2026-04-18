@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
-            $table->enum('action', ['created', 'updated', 'deleted', 'restored', 'login', 'logout']);
+            $table->string('action');
             $table->string('table_name');
             $table->unsignedBigInteger('record_id')->nullable();
             $table->json('old_values')->nullable();

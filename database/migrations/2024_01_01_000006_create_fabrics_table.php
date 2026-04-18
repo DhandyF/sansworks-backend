@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('color')->nullable();
-            $table->enum('unit', ['pcs', 'meter', 'yard', 'roll'])->default('pcs');
+            $table->string('unit')->default('pcs');
             $table->decimal('total_quantity', 10, 2)->default(0);
             $table->decimal('price_per_unit', 10, 2)->default(0);
             $table->decimal('total_price', 12, 2)->nullable();

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->date('taken_date');
             $table->date('deadline_repair_date');
             $table->string('repair_number')->unique();
-            $table->enum('repair_type', ['minor', 'major', 'redo'])->default('minor');
+            $table->string('repair_type')->default('minor');
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');

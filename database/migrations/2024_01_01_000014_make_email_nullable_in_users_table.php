@@ -3,38 +3,29 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
         if (Schema::hasTable('users')) {
-            if (Schema::hasColumn('users', 'email')) {
+            Schema::table('users', function (Blueprint $table) {
+                if (Schema::hasColumn('users', 'email')) {
+                    $table->dropUnique(['email']);
+                }
+            });
+
+            DB::statement('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
+            DB::statement('ALTER TABLE users ALTER COLUMN name DROP NOT NULL');
+
+            Schema::table('users', function (Blueprint $table) {
                 $sm = Schema::getConnection()->getDoctrineSchemaManager();
                 $indexes = $sm->listTableIndexes('users');
-
-                if (isset($indexes['users_email_unique'])) {
-                    Schema::table('users', function (Blueprint $table) {
-                        $table->dropUnique(['email']);
-                    });
-                }
-
-                Schema::table('users', function (Blueprint $table) {
-                    $table->string('email')->nullable()->change();
-                });
-
                 if (!isset($indexes['users_email_unique'])) {
-                    Schema::table('users', function (Blueprint $table) {
-                        $table->unique('email');
-                    });
+                    $table->unique('email');
                 }
-            }
-
-            if (Schema::hasColumn('users', 'name')) {
-                Schema::table('users', function (Blueprint $table) {
-                    $table->string('name')->nullable()->change();
-                });
-            }
+            });
         }
     }
 
@@ -42,12 +33,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('name')->nullable(false)->change();
-        });
-
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropUnique(['email']);
             $table->string('email')->nullable(false)->change();
-            $table->unique('email');
         });
     }
 };
