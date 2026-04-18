@@ -15,14 +15,14 @@ return [
     ],
 
     'allowed_origins_patterns' => [
-        '/https:\/\/[a-z0-9-]+\.vercel\.app/',
+        '/^https:\/\/[a-z0-9-]+\.vercel\.app$/',
     ],
 
     'allowed_headers' => ['*'],
 
     'exposed_headers' => ['*'],
 
-    'max_age' => 86400,
+    'max_age' => 0,
 
     'supports_credentials' => true,
 
