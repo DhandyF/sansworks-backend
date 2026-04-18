@@ -20,6 +20,6 @@ services:
       - key: DB_USERNAME
         value: neondb_owner
       - key: DB_PASSWORD
-        value: npg_lIXkpasss
+        value: npg_lIXkQt0pNC7q
       - key: APP_KEY
         generateValue: true
