@@ -1,0 +1,16 @@
+vendor
+node_modules
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+README.md
+*.md
+.DS_Store
+Thumbs.db
+storage/*.key
+storage/logs/*
+!storage/logs/.gitkeep
+bootstrap/cache/*
+!bootstrap/cache/.gitkeep
