@@ -17,7 +17,7 @@ class StoreUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', Password::min(8)],
             'phone' => ['nullable', 'string', 'max:20'],
             'role' => ['sometimes', 'in:admin,client,operator'],
             'status' => ['sometimes', 'in:active,inactive'],
