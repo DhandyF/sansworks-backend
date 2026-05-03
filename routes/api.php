@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\SizeController;
@@ -17,4 +18,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('brands', BrandController::class);
     Route::apiResource('tailors', TailorController::class);
     Route::apiResource('sizes', SizeController::class);
+    Route::apiResource('articles', ArticleController::class);
 });
