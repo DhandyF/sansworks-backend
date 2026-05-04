@@ -3,6 +3,7 @@
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\PreOrderController;
 use App\Http\Controllers\SizeController;
 use App\Http\Controllers\TailorController;
 use App\Http\Controllers\UserController;
@@ -19,4 +20,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('tailors', TailorController::class);
     Route::apiResource('sizes', SizeController::class);
     Route::apiResource('articles', ArticleController::class);
+    Route::get('pre-orders/next-name', [PreOrderController::class, 'nextName']);
+    Route::post('pre-orders/batch', [PreOrderController::class, 'storeBatch']);
+    Route::apiResource('pre-orders', PreOrderController::class);
 });
