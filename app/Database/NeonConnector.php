@@ -10,8 +10,11 @@ class NeonConnector extends PostgresConnector
     {
         $dsn = parent::getDsn($config);
 
-        if (!empty($config['endpoint_id'])) {
-            $dsn .= ';options=' . urlencode('-c endpoint_id=' . $config['endpoint_id']);
+        $options = $config['options'] ?? [];
+        $optionsValue = $options['options'] ?? $options ?? '';
+
+        if (is_string($optionsValue) && $optionsValue !== '') {
+            $dsn .= ';options=' . urlencode($optionsValue);
         }
 
         return $dsn;
