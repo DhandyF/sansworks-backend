@@ -16,7 +16,7 @@ class BrandController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return BrandResource::collection($this->service->paginate($request->integer('per_page', 15)));
+        return BrandResource::collection($this->service->paginate($request->integer('per_page', 15), $request->query('search')));
     }
 
     public function store(StoreBrandRequest $request): JsonResponse

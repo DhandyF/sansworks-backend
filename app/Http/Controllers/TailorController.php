@@ -16,7 +16,7 @@ class TailorController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return TailorResource::collection($this->service->paginate($request->integer('per_page', 15)));
+        return TailorResource::collection($this->service->paginate($request->integer('per_page', 15), $request->query('search')));
     }
 
     public function store(StoreTailorRequest $request): JsonResponse

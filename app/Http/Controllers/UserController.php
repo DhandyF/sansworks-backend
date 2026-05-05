@@ -16,7 +16,7 @@ class UserController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return UserResource::collection($this->service->paginate($request->integer('per_page', 15)));
+        return UserResource::collection($this->service->paginate($request->integer('per_page', 15), $request->query('search')));
     }
 
     public function store(StoreUserRequest $request): JsonResponse

@@ -17,7 +17,11 @@ class PreOrderController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return PreOrderResource::collection($this->service->paginate($request->integer('per_page', 15)));
+        return PreOrderResource::collection($this->service->paginate(
+            $request->integer('per_page', 15),
+            $request->query('search'),
+            $request->query('brand_filter')
+        ));
     }
 
     public function nextName(Request $request): JsonResponse

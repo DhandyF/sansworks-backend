@@ -12,9 +12,19 @@ class ArticleService extends BaseService
         $this->model = $model;
     }
 
-    public function paginate(int $perPage = 15): LengthAwarePaginator
+    public function paginate(int $perPage = 15, string $search = null, string $searchColumn = 'name', string $brandId = null): LengthAwarePaginator
     {
-        return $this->model->with('brand')->paginate($perPage);
+        $query = $this->model->with('brand');
+
+        if ($search) {
+            $query->where('name', 'LIKE', "%{$search}%");
+        }
+
+        if ($brandId) {
+            $query->where('brand_id', $brandId);
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function find(string $id)

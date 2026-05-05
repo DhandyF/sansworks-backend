@@ -10,9 +10,15 @@ abstract class BaseService
 {
     protected Model $model;
 
-    public function paginate(int $perPage = 15): LengthAwarePaginator
+    public function paginate(int $perPage = 15, string $search = null, string $searchColumn = 'name'): LengthAwarePaginator
     {
-        return $this->model->paginate($perPage);
+        $query = $this->model->newQuery();
+
+        if ($search) {
+            $query->where($searchColumn, 'LIKE', "%{$search}%");
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function find(string $id)

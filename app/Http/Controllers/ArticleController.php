@@ -22,7 +22,12 @@ class ArticleController extends Controller
             );
         }
 
-        return ArticleResource::collection($this->service->paginate($request->integer('per_page', 15)));
+        return ArticleResource::collection($this->service->paginate(
+            $request->integer('per_page', 15),
+            $request->query('search'),
+            'name',
+            $request->query('brand_filter')
+        ));
     }
 
     public function store(StoreArticleRequest $request): JsonResponse
