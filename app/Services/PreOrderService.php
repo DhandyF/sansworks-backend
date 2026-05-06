@@ -44,19 +44,22 @@ class PreOrderService extends BaseService
         return $this->model->with(['brand', 'article', 'size'])->findOrFail($id);
     }
 
-    public function createBatch(string $brandId, string $articleId, array $items): array
+    public function createBatch(string $brandId, string $name, string $preOrderDate, string $deadlineDate, array $articles): array
     {
-        $name = $this->generateName($brandId);
         $records = [];
 
-        foreach ($items as $item) {
-            $records[] = $this->model->create([
-                'brand_id' => $brandId,
-                'article_id' => $articleId,
-                'size_id' => $item['size_id'],
-                'total_pcs' => $item['total_pcs'],
-                'name' => $name,
-            ]);
+        foreach ($articles as $article) {
+            foreach ($article['sizes'] as $sizeItem) {
+                $records[] = $this->model->create([
+                    'brand_id' => $brandId,
+                    'article_id' => $article['article_id'],
+                    'size_id' => $sizeItem['size_id'],
+                    'name' => $name,
+                    'pre_order_date' => $preOrderDate,
+                    'deadline_date' => $deadlineDate,
+                    'total_pcs' => $sizeItem['total_pcs'],
+                ]);
+            }
         }
 
         return $records;
@@ -69,7 +72,9 @@ class PreOrderService extends BaseService
 
     public function create(array $data): PreOrder
     {
-        $data['name'] = $this->generateName($data['brand_id']);
+        if (empty($data['name'])) {
+            $data['name'] = $this->generateName($data['brand_id']);
+        }
 
         return $this->model->create($data);
     }
@@ -91,5 +96,4 @@ class PreOrderService extends BaseService
 
         return "po-{$number}-{$monthName}";
     }
-
-    }
+}

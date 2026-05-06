@@ -35,8 +35,10 @@ class PreOrderController extends Controller
         $validated = $request->validated();
         $records = $this->service->createBatch(
             $validated['brand_id'],
-            $validated['article_id'],
-            $validated['items']
+            $validated['name'],
+            $validated['pre_order_date'],
+            $validated['deadline_date'],
+            $validated['articles']
         );
 
         return response()->json(PreOrderResource::collection(

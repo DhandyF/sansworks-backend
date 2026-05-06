@@ -15,10 +15,14 @@ class StorePreOrderBatchRequest extends FormRequest
     {
         return [
             'brand_id' => ['required', 'exists:brands,id'],
-            'article_id' => ['required', 'exists:articles,id'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.size_id' => ['required', 'exists:sizes,id'],
-            'items.*.total_pcs' => ['required', 'integer', 'min:1'],
+            'name' => ['required', 'string'],
+            'pre_order_date' => ['required', 'date'],
+            'deadline_date' => ['required', 'date'],
+            'articles' => ['required', 'array', 'min:1'],
+            'articles.*.article_id' => ['required', 'exists:articles,id'],
+            'articles.*.sizes' => ['required', 'array', 'min:1'],
+            'articles.*.sizes.*.size_id' => ['required', 'exists:sizes,id'],
+            'articles.*.sizes.*.total_pcs' => ['required', 'integer', 'min:1'],
         ];
     }
 }

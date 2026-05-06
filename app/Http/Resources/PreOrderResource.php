@@ -15,6 +15,8 @@ class PreOrderResource extends JsonResource
             'brand_id' => $this->brand_id,
             'article_id' => $this->article_id,
             'size_id' => $this->size_id,
+            'pre_order_date' => $this->pre_order_date?->toIso8601String(),
+            'deadline_date' => $this->deadline_date?->toIso8601String(),
             'total_pcs' => $this->total_pcs,
             'brand' => new BrandResource($this->whenLoaded('brand')),
             'article' => new ArticleResource($this->whenLoaded('article')),

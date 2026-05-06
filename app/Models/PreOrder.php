@@ -16,8 +16,18 @@ class PreOrder extends Model
         'article_id',
         'size_id',
         'name',
+        'pre_order_date',
+        'deadline_date',
         'total_pcs',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'pre_order_date' => 'date',
+            'deadline_date' => 'date',
+        ];
+    }
 
     public function brand(): BelongsTo
     {
