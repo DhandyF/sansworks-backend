@@ -2,21 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\Brand;
 use App\Models\PreOrder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class PreOrderService extends BaseService
 {
-    private const NUMBER_MAP = [
-        1 => 'satu', 2 => 'dua', 3 => 'tiga', 4 => 'empat', 5 => 'lima',
-        6 => 'enam', 7 => 'tujuh', 8 => 'delapan', 9 => 'sembilan', 10 => 'sepuluh',
-        11 => 'sebelas', 12 => 'dua belas',
-    ];
-
     private const MONTH_MAP = [
-        1 => 'januari', 2 => 'februari', 3 => 'maret', 4 => 'april',
-        5 => 'mei', 6 => 'juni', 7 => 'juli', 8 => 'agustus',
-        9 => 'september', 10 => 'oktober', 11 => 'november', 12 => 'desember',
+        1 => 'JAN', 2 => 'FEB', 3 => 'MAR', 4 => 'APR',
+        5 => 'MEI', 6 => 'JUN', 7 => 'JUL', 8 => 'AGU',
+        9 => 'SEP', 10 => 'OKT', 11 => 'NOV', 12 => 'DES',
     ];
 
     public function __construct(PreOrder $model)
@@ -89,11 +84,13 @@ class PreOrderService extends BaseService
             ->where('brand_id', $brandId)
             ->whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
-            ->count();
+            ->distinct()
+            ->count('name');
 
-        $number = self::NUMBER_MAP[$count + 1] ?? (string) ($count + 1);
-        $monthName = self::MONTH_MAP[$month];
+        $number = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+        $monthAbbr = self::MONTH_MAP[$month];
+        $brandName = strtoupper(Brand::findOrFail($brandId)->name);
 
-        return "po-{$number}-{$monthName}";
+        return "PO-{$monthAbbr}-{$number}-{$brandName}";
     }
 }
