@@ -86,19 +86,19 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'host' => env('DB_HOST', 'ep-misty-mud-ao94kr3b.c-2.ap-southeast-1.aws.neon.tech'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'neondb'),
-            'username' => env('DB_USERNAME', 'neondb_owner'),
-            'password' => env('DB_PASSWORD', 'npg_xqonV2byASd3'),
+            'host' => env('DB_HOST', 'aws-1-ap-southeast-1.pooler.supabase.com'),
+            'port' => env('DB_PORT', '6543'),
+            'database' => env('DB_DATABASE', 'postgres'),
+            'username' => env('DB_USERNAME', 'postgres.jfhihraeztbnchhhbcsk'),
+            'password' => env('DB_PASSWORD', 'etjm5hfRLbF8Q8EA'),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'require',
-            'options' => [
-                PDO::ATTR_TIMEOUT => 30,
-            ],
+            // 'options' => [
+            //     PDO::ATTR_TIMEOUT => 30,
+            // ],
         ],
 
         'sqlsrv' => [
