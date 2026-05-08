@@ -21,7 +21,7 @@ class PreOrderService extends BaseService
 
     public function paginate(int $perPage = 15, string $search = null, string $brandId = null): LengthAwarePaginator
     {
-        $query = $this->model->with(['brand', 'article', 'size']);
+        $query = $this->model->with(['brand', 'article', 'size', 'cuttingResults']);
 
         if ($search) {
             $query->where('name', 'LIKE', "%{$search}%");
@@ -36,7 +36,7 @@ class PreOrderService extends BaseService
 
     public function find(string $id)
     {
-        return $this->model->with(['brand', 'article', 'size'])->findOrFail($id);
+        return $this->model->with(['brand', 'article', 'size', 'cuttingResults'])->findOrFail($id);
     }
 
     public function createBatch(string $brandId, string $name, string $preOrderDate, string $deadlineDate, array $articles): array
