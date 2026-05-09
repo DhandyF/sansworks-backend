@@ -3,6 +3,7 @@
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\BrandDetailController;
 use App\Http\Controllers\CuttingDistributionController;
 use App\Http\Controllers\CuttingResultController;
 use App\Http\Controllers\DepositCuttingResultController;
@@ -20,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('users', UserController::class);
     Route::apiResource('brands', BrandController::class);
+    Route::get('brands/{id}/production-stats', [BrandDetailController::class, 'productionStats']);
     Route::apiResource('tailors', TailorController::class);
     Route::apiResource('sizes', SizeController::class);
     Route::apiResource('articles', ArticleController::class);
