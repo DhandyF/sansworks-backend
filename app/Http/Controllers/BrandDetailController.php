@@ -17,16 +17,14 @@ class BrandDetailController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $stats = $preOrders->map(function ($po) {
-            $totalPcs = $po->total_pcs;
-            $cutQty = $po->cuttingResults->sum('total_cutting');
-            $remaining = $totalPcs - $cutQty;
+        $grouped = $preOrders->groupBy('name')->map(function ($group) {
+            $first = $group->first();
+            $totalPcs = $group->sum('total_pcs');
+            $cutQty = $group->sum(fn ($po) => $po->cuttingResults->sum('total_cutting'));
+            $totalDistributed = $group->sum(fn ($po) => $po->cuttingResults->flatMap->distributions->sum('total_cutting'));
+            $totalDeposited = $group->sum(fn ($po) => $po->cuttingResults->flatMap->distributions->flatMap->deposits->sum('total_sewing_result'));
 
-            $totalCuttingResultQty = $po->cuttingResults->sum('total_cutting');
-            $totalDistributed = $po->cuttingResults->flatMap->distributions->sum('total_cutting');
-            $totalDeposited = $po->cuttingResults->flatMap->distributions->flatMap->deposits->sum('total_sewing_result');
-
-            $deadlineDate = $po->deadline_date?->format('Y-m-d');
+            $deadlineDate = $first->deadline_date?->format('Y-m-d');
             $today = now()->format('Y-m-d');
 
             $status = 'in_progress';
@@ -37,30 +35,27 @@ class BrandDetailController extends Controller
             }
 
             return [
-                'id' => $po->id,
-                'name' => $po->name,
-                'pre_order_date' => $po->pre_order_date?->toIso8601String(),
-                'deadline_date' => $po->deadline_date?->toIso8601String(),
-                'article' => $po->article ? ['id' => $po->article->id, 'name' => $po->article->name] : null,
-                'size' => $po->size ? ['id' => $po->size->id, 'abbreviation' => $po->size->abbreviation] : null,
-                'total_pcs' => $totalPcs,
+                'id' => $first->id,
+                'name' => $first->name,
+                'pre_order_date' => $first->pre_order_date?->toIso8601String(),
+                'deadline_date' => $first->deadline_date?->toIso8601String(),
+                'total_pcs' => (int) $totalPcs,
                 'cut_qty' => (int) $cutQty,
-                'cutting_remaining' => $remaining,
+                'cutting_remaining' => (int) ($totalPcs - $cutQty),
                 'distributed_qty' => (int) $totalDistributed,
                 'deposited_qty' => (int) $totalDeposited,
                 'status' => $status,
             ];
-        });
+        })->values();
 
-        $totalPreOrders = $preOrders->count();
         $totalPcs = $preOrders->sum('total_pcs');
         $totalCutQty = $preOrders->sum(fn ($po) => $po->cuttingResults->sum('total_cutting'));
         $totalDistributed = $preOrders->sum(fn ($po) => $po->cuttingResults->flatMap->distributions->sum('total_cutting'));
         $totalDeposited = $preOrders->sum(fn ($po) => $po->cuttingResults->flatMap->distributions->flatMap->deposits->sum('total_sewing_result'));
 
-        $doneCount = $stats->where('status', 'done')->count();
-        $inProgressCount = $stats->where('status', 'in_progress')->count();
-        $overdueCount = $stats->where('status', 'overdue')->count();
+        $doneCount = $grouped->where('status', 'done')->count();
+        $inProgressCount = $grouped->where('status', 'in_progress')->count();
+        $overdueCount = $grouped->where('status', 'overdue')->count();
 
         return response()->json([
             'brand' => [
@@ -71,17 +66,17 @@ class BrandDetailController extends Controller
                 'status' => $brand->status,
             ],
             'summary' => [
-                'total_pre_orders' => $totalPreOrders,
-                'total_pcs' => $totalPcs,
+                'total_pre_orders' => $grouped->count(),
+                'total_pcs' => (int) $totalPcs,
                 'total_cut_qty' => (int) $totalCutQty,
-                'cutting_remaining' => $totalPcs - (int) $totalCutQty,
+                'cutting_remaining' => (int) ($totalPcs - $totalCutQty),
                 'total_distributed' => (int) $totalDistributed,
                 'total_deposited' => (int) $totalDeposited,
                 'done_count' => $doneCount,
                 'in_progress_count' => $inProgressCount,
                 'overdue_count' => $overdueCount,
             ],
-            'pre_orders' => $stats,
+            'pre_orders' => $grouped,
         ]);
     }
 }
