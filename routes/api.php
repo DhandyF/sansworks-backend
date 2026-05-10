@@ -9,6 +9,7 @@ use App\Http\Controllers\CuttingResultController;
 use App\Http\Controllers\DepositCuttingResultController;
 use App\Http\Controllers\PreOrderController;
 use App\Http\Controllers\PreOrderDetailController;
+use App\Http\Controllers\PayslipController;
 use App\Http\Controllers\SizeController;
 use App\Http\Controllers\TailorController;
 use App\Http\Controllers\TailorDetailController;
@@ -39,4 +40,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('cutting-distributions', CuttingDistributionController::class);
     Route::apiResource('deposit-cutting-results', DepositCuttingResultController::class);
     Route::post('deposit-cutting-results/batch', [DepositCuttingResultController::class, 'storeBatch']);
+    Route::get('payslips/generate', [PayslipController::class, 'generate']);
 });
