@@ -89,4 +89,42 @@ class CuttingDistributionService extends BaseService
             'available' => $totalCutting - (int) $deposited,
         ];
     }
+
+    public function createBatch(array $data): array
+    {
+        $cuttingResults = \App\Models\CuttingResult::where('name', $data['cutting_result_name'])
+            ->orderBy('cutting_date')
+            ->get();
+
+        $tailor = \App\Models\Tailor::findOrFail($data['tailor_id']);
+
+        $remaining = $data['total_cutting'];
+        $distributions = [];
+
+        foreach ($cuttingResults as $cr) {
+            if ($remaining <= 0) break;
+            if ($cr->remaining <= 0) continue;
+
+            $qty = min($remaining, $cr->remaining);
+
+            $distribution = $this->model->create([
+                'name' => $cr->name . '-' . strtoupper($tailor->name),
+                'cutting_result_id' => $cr->id,
+                'tailor_id' => $data['tailor_id'],
+                'brand_id' => $cr->brand_id,
+                'article_id' => $cr->article_id,
+                'size_id' => $cr->size_id,
+                'total_cutting' => $qty,
+                'taken_date' => $data['taken_date'],
+                'deadline_date' => $data['deadline_date'] ?? null,
+                'notes' => $data['notes'] ?? null,
+            ]);
+
+            $cr->decrement('remaining', $qty);
+            $distributions[] = $distribution;
+            $remaining -= $qty;
+        }
+
+        return $distributions;
+    }
 }

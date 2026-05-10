@@ -96,4 +96,58 @@ class DepositCuttingResultService extends BaseService
         $deposit = $this->model->findOrFail($id);
         $deposit->delete();
     }
+
+    public function createBatch(array $data): array
+    {
+        $ids = $data['distribution_ids'];
+        $remaining = (int) $data['total_sewing_result'];
+        $deposits = [];
+
+        $distributions = \App\Models\CuttingDistribution::with(['cuttingResult', 'tailor', 'deposits'])
+            ->whereIn('id', $ids)
+            ->orderBy('created_at')
+            ->get();
+
+        foreach ($distributions as $dist) {
+            if ($remaining <= 0) break;
+            $depositAvailable = $dist->total_cutting - $dist->deposits->sum('total_sewing_result');
+            if ($depositAvailable <= 0) continue;
+
+            $qty = min($remaining, $depositAvailable);
+            $existingDepositsCount = $dist->deposits->count();
+
+            $totalAllDeposits = $dist->deposits->sum('total_sewing_result') + $qty;
+
+            $status = 'in_progress';
+            $depositDate = $data['deposit_date'] ?? null;
+            if ($totalAllDeposits >= $dist->total_cutting) {
+                $status = 'done';
+            } elseif ($depositDate && $dist->deadline_date && $depositDate > $dist->deadline_date->format('Y-m-d')) {
+                $status = 'overdue';
+            }
+
+            $deposit = $this->model->create([
+                'name' => $dist->name . '-DEP' . ($existingDepositsCount + 1),
+                'cutting_distribution_id' => $dist->id,
+                'tailor_id' => $dist->tailor_id,
+                'brand_id' => $dist->brand_id,
+                'article_id' => $dist->article_id,
+                'size_id' => $dist->size_id,
+                'total_sewing_result' => $qty,
+                'deposit_date' => $data['deposit_date'],
+                'status' => $status,
+                'quality_notes' => $data['quality_notes'] ?? null,
+                'notes' => $data['notes'] ?? null,
+            ]);
+
+            if ($totalAllDeposits >= $dist->total_cutting) {
+                $dist->deposits()->where('id', '!=', $deposit->id)->update(['status' => 'done']);
+            }
+
+            $deposits[] = $deposit;
+            $remaining -= $qty;
+        }
+
+        return $deposits;
+    }
 }

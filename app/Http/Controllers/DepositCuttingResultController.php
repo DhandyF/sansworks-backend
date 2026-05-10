@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DepositCuttingResult\StoreDepositCuttingResultRequest;
+use App\Http\Requests\DepositCuttingResult\StoreDepositCuttingResultBatchRequest;
 use App\Http\Requests\DepositCuttingResult\UpdateDepositCuttingResultRequest;
 use App\Http\Resources\DepositCuttingResultResource;
 use App\Services\DepositCuttingResultService;
@@ -26,6 +27,14 @@ class DepositCuttingResultController extends Controller
     {
         $deposit = $this->service->create($request->validated());
         return response()->json(new DepositCuttingResultResource($deposit->load(['cuttingDistribution.cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size'])), 201);
+    }
+
+    public function storeBatch(StoreDepositCuttingResultBatchRequest $request)
+    {
+        $deposits = $this->service->createBatch($request->validated());
+        return response()->json(DepositCuttingResultResource::collection(
+            collect($deposits)->map(fn ($d) => $d->load(['cuttingDistribution.cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size']))
+        ), 201);
     }
 
     public function show(string $id)

@@ -33,6 +33,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('cutting-results/remaining', [CuttingResultController::class, 'remaining']);
     Route::apiResource('cutting-results', CuttingResultController::class);
     Route::get('cutting-distributions/remaining', [CuttingDistributionController::class, 'remaining']);
+    Route::post('cutting-distributions/batch', [CuttingDistributionController::class, 'storeBatch']);
     Route::apiResource('cutting-distributions', CuttingDistributionController::class);
     Route::apiResource('deposit-cutting-results', DepositCuttingResultController::class);
+    Route::post('deposit-cutting-results/batch', [DepositCuttingResultController::class, 'storeBatch']);
 });

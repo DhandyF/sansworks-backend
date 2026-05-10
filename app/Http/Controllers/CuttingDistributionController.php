@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use App\Http\Resources\CuttingDistributionResource;
 use App\Http\Requests\CuttingDistribution\StoreCuttingDistributionRequest;
+use App\Http\Requests\CuttingDistribution\StoreCuttingDistributionBatchRequest;
 use App\Http\Requests\CuttingDistribution\UpdateCuttingDistributionRequest;
 
 class CuttingDistributionController extends Controller
@@ -37,6 +38,14 @@ class CuttingDistributionController extends Controller
     {
         $distribution = $this->service->create($request->validated());
         return response()->json(new CuttingDistributionResource($distribution->load(['cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size'])), 201);
+    }
+
+    public function storeBatch(StoreCuttingDistributionBatchRequest $request)
+    {
+        $distributions = $this->service->createBatch($request->validated());
+        return response()->json(CuttingDistributionResource::collection(
+            collect($distributions)->map(fn ($d) => $d->load(['cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size']))
+        ), 201);
     }
 
     public function show(string $id)
