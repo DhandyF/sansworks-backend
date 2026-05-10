@@ -28,49 +28,21 @@ class PayslipController extends Controller
             ->whereDate('deposit_date', '<=', $endDate->toDateString())
             ->get();
 
-        $dateRange = [];
-        $current = $startDate->copy();
-        while ($current->lte($endDate)) {
-            $dateRange[] = $current->format('Y-m-d');
-            $current->addDay();
-        }
+        $dayCount = $startDate->diffInDays($endDate) + 1;
+        $useWeeks = $dayCount > 7;
 
-        $grouped = $deposits->groupBy(function ($dep) {
-            return $dep->cuttingDistribution?->article?->id ?? 'unknown';
-        })->map(function ($group, $articleId) use ($dateRange) {
-            $articleName = $group->first()->cuttingDistribution?->article?->name ?? 'Unknown Article';
-
-            $daily = array_fill_keys($dateRange, 0);
-            $totalQty = 0;
-            $totalPrice = 0;
-            $cuttingPricePerPcs = 0;
-
-            foreach ($group as $dep) {
-                $depDate = Carbon::parse($dep->deposit_date)->format('Y-m-d');
-                $qty = (int) $dep->total_sewing_result;
-                if (isset($daily[$depDate])) {
-                    $daily[$depDate] += $qty;
-                }
-                $totalQty += $qty;
-                $totalPrice += (float) $dep->total_price;
-                if ($qty > 0 && !empty($dep->cutting_price_per_pcs)) {
-                    $cuttingPricePerPcs = (float) $dep->cutting_price_per_pcs;
-                }
+        if ($useWeeks) {
+            $weeks = $this->buildWeeks($startDate, $endDate);
+            $grouped = $this->groupByWeeks($deposits, $weeks);
+        } else {
+            $dateRange = [];
+            $current = $startDate->copy();
+            while ($current->lte($endDate)) {
+                $dateRange[] = $current->format('Y-m-d');
+                $current->addDay();
             }
-
-            $pricePerPcs = $totalQty > 0 ? round($totalPrice / $totalQty, 2) : 0;
-
-            return [
-                'article_name' => $articleName,
-                'article_id' => $articleId,
-                'daily' => $daily,
-                'total_qty' => $totalQty,
-                'price_per_pcs' => $pricePerPcs,
-                'cutting_price_per_pcs' => $cuttingPricePerPcs,
-                'total_price' => round($totalPrice, 2),
-                'deposit_count' => $group->count(),
-            ];
-        })->values()->all();
+            $grouped = $this->groupByDays($deposits, $dateRange);
+        }
 
         $grandTotal = collect($grouped)->sum('total_price');
         $grandQty = collect($grouped)->sum('total_qty');
@@ -97,8 +69,9 @@ class PayslipController extends Controller
                 'end_date' => $endDate->format('Y-m-d'),
                 'week_label' => $periodLabel,
                 'month_label' => $monthLabel,
-                'date_range' => $dateRange,
+                'use_weeks' => $useWeeks,
             ],
+            'columns' => $useWeeks ? $this->buildWeeks($startDate, $endDate) : $this->buildDays($startDate, $endDate),
             'items' => $grouped,
             'summary' => [
                 'total_articles' => count($grouped),
@@ -106,5 +79,124 @@ class PayslipController extends Controller
                 'total_price' => round($grandTotal, 2),
             ],
         ]);
+    }
+
+    private function buildWeeks($startDate, $endDate)
+    {
+        $weeks = [];
+        $current = $startDate->copy()->startOfWeek(Carbon::MONDAY);
+        $weekNum = 1;
+        while ($current->lte($endDate)) {
+            $weekStart = $current->copy();
+            $weekEnd = $current->copy()->endOfWeek(Carbon::SUNDAY);
+            if ($weekEnd->gt($endDate)) {
+                $weekEnd = $endDate->copy();
+            }
+            $weeks[] = [
+                'key' => "week_{$weekNum}",
+                'label' => "Week {$weekNum}",
+                'sub_label' => $weekStart->format('d M') . ' - ' . $weekEnd->format('d M'),
+                'start' => $weekStart->format('Y-m-d'),
+                'end' => $weekEnd->format('Y-m-d'),
+            ];
+            $current->addWeek();
+            $weekNum++;
+        }
+        return $weeks;
+    }
+
+    private function buildDays($startDate, $endDate)
+    {
+        $days = [];
+        $current = $startDate->copy();
+        while ($current->lte($endDate)) {
+            $days[] = [
+                'key' => $current->format('Y-m-d'),
+                'label' => $current->format('d M'),
+                'sub_label' => $current->format('D'),
+                'date' => $current->format('Y-m-d'),
+            ];
+            $current->addDay();
+        }
+        return $days;
+    }
+
+    private function groupByWeeks($deposits, $weeks)
+    {
+        return $deposits->groupBy(function ($dep) {
+            return $dep->cuttingDistribution?->article?->id ?? 'unknown';
+        })->map(function ($group, $articleId) use ($weeks) {
+            $articleName = $group->first()->cuttingDistribution?->article?->name ?? 'Unknown Article';
+            $weekly = [];
+            foreach ($weeks as $w) {
+                $weekly[$w['key']] = 0;
+            }
+            $totalQty = 0;
+            $totalPrice = 0;
+            $cuttingPricePerPcs = 0;
+            foreach ($group as $dep) {
+                $depDate = Carbon::parse($dep->deposit_date)->format('Y-m-d');
+                foreach ($weeks as $w) {
+                    if ($depDate >= $w['start'] && $depDate <= $w['end']) {
+                        $weekly[$w['key']] += (int) $dep->total_sewing_result;
+                        break;
+                    }
+                }
+                $qty = (int) $dep->total_sewing_result;
+                $totalQty += $qty;
+                $totalPrice += (float) $dep->total_price;
+                if ($qty > 0 && !empty($dep->cutting_price_per_pcs)) {
+                    $cuttingPricePerPcs = (float) $dep->cutting_price_per_pcs;
+                }
+            }
+            $pricePerPcs = $totalQty > 0 ? round($totalPrice / $totalQty, 2) : 0;
+            return [
+                'article_name' => $articleName,
+                'article_id' => $articleId,
+                'columns' => $weekly,
+                'total_qty' => $totalQty,
+                'price_per_pcs' => $pricePerPcs,
+                'cutting_price_per_pcs' => $cuttingPricePerPcs,
+                'total_price' => round($totalPrice, 2),
+                'deposit_count' => $group->count(),
+            ];
+        })->values()->all();
+    }
+
+    private function groupByDays($deposits, $dateRange)
+    {
+        $daily = array_fill_keys($dateRange, 0);
+        return $deposits->groupBy(function ($dep) {
+            return $dep->cuttingDistribution?->article?->id ?? 'unknown';
+        })->map(function ($group, $articleId) use ($dateRange, $daily) {
+            $articleName = $group->first()->cuttingDistribution?->article?->name ?? 'Unknown Article';
+            $d = $daily;
+            $totalQty = 0;
+            $totalPrice = 0;
+            $cuttingPricePerPcs = 0;
+            foreach ($group as $dep) {
+                $depDate = Carbon::parse($dep->deposit_date)->format('Y-m-d');
+                if (isset($d[$depDate])) {
+                    $d[$depDate] += (int) $dep->total_sewing_result;
+                }
+                $qty = (int) $dep->total_sewing_result;
+                $totalQty += $qty;
+                $totalPrice += (float) $dep->total_price;
+                if ($qty > 0 && !empty($dep->cutting_price_per_pcs)) {
+                    $cuttingPricePerPcs = (float) $dep->cutting_price_per_pcs;
+                }
+            }
+            $pricePerPcs = $totalQty > 0 ? round($totalPrice / $totalQty, 2) : 0;
+            return [
+                'article_name' => $articleName,
+                'article_id' => $articleId,
+                'columns' => $d,
+                'total_qty' => $totalQty,
+                'price_per_pcs' => $pricePerPcs,
+                'cutting_price_per_pcs' => $cuttingPricePerPcs,
+                'total_price' => round($totalPrice, 2),
+                'deposit_count' => $group->count(),
+            ];
+        })->values()->all();
     }
 }
