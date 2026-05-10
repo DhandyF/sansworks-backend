@@ -19,6 +19,8 @@ class DepositCuttingResult extends Model
         'article_id',
         'size_id',
         'total_sewing_result',
+        'cutting_price_per_pcs',
+        'total_price',
         'deposit_date',
         'status',
         'quality_notes',

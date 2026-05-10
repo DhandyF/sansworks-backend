@@ -44,6 +44,8 @@ class DepositCuttingResultService extends BaseService
         $data['size_id'] = $distribution->size_id;
         $data['tailor_id'] = $distribution->tailor_id;
 
+        $data['total_price'] = (float) ($data['cutting_price_per_pcs'] ?? 0) * (int) $data['total_sewing_result'];
+
         if (!isset($data['status'])) {
             $totalAllDeposits = (int) $distribution->deposits->sum('total_sewing_result') + (int) $data['total_sewing_result'];
             if ($totalAllDeposits >= $distribution->total_cutting) {
@@ -67,6 +69,12 @@ class DepositCuttingResultService extends BaseService
     public function update(string $id, array $data): DepositCuttingResult
     {
         $deposit = $this->model->findOrFail($id);
+
+        if (isset($data['total_sewing_result']) || isset($data['cutting_price_per_pcs'])) {
+            $pricePerPcs = (float) ($data['cutting_price_per_pcs'] ?? $deposit->cutting_price_per_pcs);
+            $sewingResult = (int) ($data['total_sewing_result'] ?? $deposit->total_sewing_result);
+            $data['total_price'] = $pricePerPcs * $sewingResult;
+        }
 
         if (isset($data['total_sewing_result']) || isset($data['deposit_date'])) {
             $distribution = $deposit->cuttingDistribution;
@@ -134,6 +142,8 @@ class DepositCuttingResultService extends BaseService
                 'article_id' => $dist->article_id,
                 'size_id' => $dist->size_id,
                 'total_sewing_result' => $qty,
+                'cutting_price_per_pcs' => $data['cutting_price_per_pcs'] ?? 0,
+                'total_price' => (float) ($data['cutting_price_per_pcs'] ?? 0) * $qty,
                 'deposit_date' => $data['deposit_date'],
                 'status' => $status,
                 'quality_notes' => $data['quality_notes'] ?? null,

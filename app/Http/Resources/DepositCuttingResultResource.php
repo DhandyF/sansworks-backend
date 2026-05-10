@@ -18,6 +18,8 @@ class DepositCuttingResultResource extends JsonResource
             'article_id' => $this->article_id,
             'size_id' => $this->size_id,
             'total_sewing_result' => $this->total_sewing_result,
+            'cutting_price_per_pcs' => $this->cutting_price_per_pcs,
+            'total_price' => $this->total_price,
             'deposit_date' => $this->deposit_date?->toIso8601String(),
             'status' => $this->status,
             'quality_notes' => $this->quality_notes,

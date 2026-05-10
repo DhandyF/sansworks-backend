@@ -17,6 +17,7 @@ class StoreDepositCuttingResultRequest extends FormRequest
         return [
             'cutting_distribution_id' => ['required', 'exists:cutting_distributions,id'],
             'total_sewing_result' => ['required', 'integer', 'min:1'],
+            'cutting_price_per_pcs' => ['required', 'numeric', 'min:0'],
             'deposit_date' => ['required', 'date'],
             'quality_notes' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],

@@ -17,6 +17,7 @@ class StoreDepositCuttingResultBatchRequest extends FormRequest
             'distribution_ids' => ['required', 'array', 'min:1'],
             'distribution_ids.*' => ['required', 'exists:cutting_distributions,id'],
             'total_sewing_result' => ['required', 'integer', 'min:1'],
+            'cutting_price_per_pcs' => ['required', 'numeric', 'min:0'],
             'deposit_date' => ['required', 'date'],
             'quality_notes' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
