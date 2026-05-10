@@ -11,6 +11,7 @@ use App\Http\Controllers\PreOrderController;
 use App\Http\Controllers\PreOrderDetailController;
 use App\Http\Controllers\SizeController;
 use App\Http\Controllers\TailorController;
+use App\Http\Controllers\TailorDetailController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('brands', BrandController::class);
     Route::get('brands/{id}/production-stats', [BrandDetailController::class, 'productionStats']);
     Route::apiResource('tailors', TailorController::class);
+    Route::get('tailors/{id}/detail-stats', [TailorDetailController::class, 'detailStats']);
     Route::apiResource('sizes', SizeController::class);
     Route::apiResource('articles', ArticleController::class);
     Route::get('pre-orders/next-name', [PreOrderController::class, 'nextName']);
