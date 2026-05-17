@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Traits\LogsActivity;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 abstract class BaseService
 {
+    use LogsActivity;
+
     protected Model $model;
 
     public function paginate(int $perPage = 15, string $search = null, string $searchColumn = 'name'): LengthAwarePaginator
@@ -28,20 +31,32 @@ abstract class BaseService
 
     public function create(array $data)
     {
-        return DB::transaction(fn () => $this->model->create($data));
+        $record = DB::transaction(fn () => $this->model->create($data));
+        
+        $this->logCreate($record->toArray());
+        
+        return $record;
     }
 
     public function update(string $id, array $data)
     {
         $record = $this->find($id);
+        $oldData = $record->toArray();
 
-        return DB::transaction(fn () => tap($record)->update($data));
+        $updatedRecord = DB::transaction(fn () => tap($record)->update($data));
+        
+        $this->logUpdate($oldData, $updatedRecord->toArray());
+        
+        return $updatedRecord;
     }
 
     public function delete(string $id): void
     {
         $record = $this->find($id);
+        $recordData = $record->toArray();
 
         DB::transaction(fn () => $record->delete());
+        
+        $this->logDelete($recordData);
     }
 }

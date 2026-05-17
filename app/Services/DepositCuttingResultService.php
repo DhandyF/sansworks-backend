@@ -63,12 +63,15 @@ class DepositCuttingResultService extends BaseService
             $distribution->deposits()->where('id', '!=', $deposit->id)->update(['status' => 'done']);
         }
 
+        $this->logCreate($deposit->toArray());
+
         return $deposit;
     }
 
     public function update(string $id, array $data): DepositCuttingResult
     {
         $deposit = $this->model->findOrFail($id);
+        $oldData = $deposit->toArray();
 
         if (isset($data['total_sewing_result']) || isset($data['cutting_price_per_pcs'])) {
             $pricePerPcs = (float) ($data['cutting_price_per_pcs'] ?? $deposit->cutting_price_per_pcs);
@@ -96,13 +99,21 @@ class DepositCuttingResultService extends BaseService
         }
 
         $deposit->update($data);
-        return $deposit->fresh();
+        $updatedRecord = $deposit->fresh();
+
+        $this->logUpdate($oldData, $updatedRecord->toArray());
+
+        return $updatedRecord;
     }
 
     public function delete(string $id): void
     {
         $deposit = $this->model->findOrFail($id);
+        $recordData = $deposit->toArray();
+
         $deposit->delete();
+
+        $this->logDelete($recordData);
     }
 
     public function createBatch(array $data): array
@@ -110,6 +121,7 @@ class DepositCuttingResultService extends BaseService
         $ids = $data['distribution_ids'];
         $remaining = (int) $data['total_sewing_result'];
         $deposits = [];
+        $createdData = [];
 
         $distributions = \App\Models\CuttingDistribution::with(['cuttingResult', 'tailor', 'deposits'])
             ->whereIn('id', $ids)
@@ -155,8 +167,14 @@ class DepositCuttingResultService extends BaseService
             }
 
             $deposits[] = $deposit;
+            $createdData[] = $deposit->toArray();
             $remaining -= $qty;
         }
+
+        $this->getActivityLogService()->log('deposit.batch_created', 'deposit', $createdData[0]['id'] ?? uniqid(), [
+            'count' => count($deposits),
+            'total_sewing_result' => $data['total_sewing_result'],
+        ]);
 
         return $deposits;
     }

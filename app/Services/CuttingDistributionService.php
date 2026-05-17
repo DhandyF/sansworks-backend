@@ -46,12 +46,15 @@ class CuttingDistributionService extends BaseService
 
         $cuttingResult->decrement('remaining', $data['total_cutting']);
 
+        $this->logCreate($distribution->toArray());
+
         return $distribution;
     }
 
     public function update(string $id, array $data): CuttingDistribution
     {
         $distribution = $this->model->findOrFail($id);
+        $oldData = $distribution->toArray();
 
         if (isset($data['total_cutting'])) {
             $cuttingResult = $distribution->cuttingResult;
@@ -64,17 +67,24 @@ class CuttingDistributionService extends BaseService
         }
 
         $distribution->update($data);
-        return $distribution->fresh();
+        $updatedRecord = $distribution->fresh();
+
+        $this->logUpdate($oldData, $updatedRecord->toArray());
+
+        return $updatedRecord;
     }
 
     public function delete(string $id): void
     {
         $distribution = $this->model->findOrFail($id);
         $cuttingResult = $distribution->cuttingResult;
+        $recordData = $distribution->toArray();
 
         $cuttingResult->increment('remaining', $distribution->total_cutting);
 
         $distribution->delete();
+
+        $this->logDelete($recordData);
     }
 
     public function getDepositRemaining(string $distributionId): array
@@ -100,6 +110,7 @@ class CuttingDistributionService extends BaseService
 
         $remaining = $data['total_cutting'];
         $distributions = [];
+        $createdData = [];
 
         foreach ($cuttingResults as $cr) {
             if ($remaining <= 0) break;
@@ -122,8 +133,14 @@ class CuttingDistributionService extends BaseService
 
             $cr->decrement('remaining', $qty);
             $distributions[] = $distribution;
+            $createdData[] = $distribution->toArray();
             $remaining -= $qty;
         }
+
+        $this->getActivityLogService()->log('distribution.batch_created', 'distribution', $createdData[0]['id'] ?? uniqid(), [
+            'count' => count($distributions),
+            'tailor' => $tailor->name,
+        ]);
 
         return $distributions;
     }

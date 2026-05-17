@@ -43,12 +43,17 @@ class CuttingResultService extends BaseService
         $data['name'] = $preOrder->name . '-' . strtoupper($article->name) . '-' . strtoupper($size->abbreviation);
         $data['brand_id'] = $preOrder->brand_id;
 
-        return $this->model->create($data);
+        $record = $this->model->create($data);
+        
+        $this->logCreate($record->toArray());
+        
+        return $record;
     }
 
     public function update(string $id, array $data): CuttingResult
     {
         $cuttingResult = $this->model->findOrFail($id);
+        $oldData = $cuttingResult->toArray();
 
         if (isset($data['total_cutting'])) {
             $distributed = $cuttingResult->distributions()->sum('total_cutting');
@@ -56,7 +61,11 @@ class CuttingResultService extends BaseService
         }
 
         $cuttingResult->update($data);
-        return $cuttingResult->fresh();
+        $updatedRecord = $cuttingResult->fresh();
+        
+        $this->logUpdate($oldData, $updatedRecord->toArray());
+        
+        return $updatedRecord;
     }
 
     public function getRemaining(string $preOrderId): array
@@ -75,6 +84,10 @@ class CuttingResultService extends BaseService
     public function delete(string $id): void
     {
         $cuttingResult = $this->model->findOrFail($id);
+        $recordData = $cuttingResult->toArray();
+        
         $cuttingResult->delete();
+        
+        $this->logDelete($recordData);
     }
 }

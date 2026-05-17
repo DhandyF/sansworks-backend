@@ -42,10 +42,11 @@ class PreOrderService extends BaseService
     public function createBatch(string $brandId, string $name, string $preOrderDate, string $deadlineDate, array $articles): array
     {
         $records = [];
+        $createdData = [];
 
         foreach ($articles as $article) {
             foreach ($article['sizes'] as $sizeItem) {
-                $records[] = $this->model->create([
+                $record = $this->model->create([
                     'brand_id' => $brandId,
                     'article_id' => $article['article_id'],
                     'size_id' => $sizeItem['size_id'],
@@ -54,8 +55,16 @@ class PreOrderService extends BaseService
                     'deadline_date' => $deadlineDate,
                     'total_pcs' => $sizeItem['total_pcs'],
                 ]);
+                $records[] = $record;
+                $createdData[] = $record->toArray();
             }
         }
+
+        $this->getActivityLogService()->log('pre_order.batch_created', 'preorder', $createdData[0]['id'] ?? uniqid(), [
+            'count' => count($records),
+            'name' => $name,
+            'brand_id' => $brandId,
+        ]);
 
         return $records;
     }
