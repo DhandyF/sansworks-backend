@@ -15,6 +15,9 @@ class UpdatePreOrderRequest extends FormRequest
     {
         return [
             'brand_id' => ['sometimes', 'exists:brands,id'],
+            'name' => ['sometimes', 'string'],
+            'pre_order_date' => ['sometimes', 'date'],
+            'deadline_date' => ['sometimes', 'date'],
             'article_id' => ['sometimes', 'exists:articles,id'],
             'size_id' => ['sometimes', 'exists:sizes,id'],
             'total_pcs' => ['sometimes', 'integer', 'min:1'],
