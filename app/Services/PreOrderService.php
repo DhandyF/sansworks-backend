@@ -21,7 +21,7 @@ class PreOrderService extends BaseService
 
     public function paginate(int $perPage = 15, string $search = null, string $brandId = null): LengthAwarePaginator
     {
-        $query = $this->model->with(['brand', 'article', 'size', 'cuttingResults', 'shipments']);
+        $query = $this->model->with(['brand', 'article', 'size', 'cuttingResults.distributions.deposits', 'shipments']);
 
         if ($search) {
             $query->where('name', 'LIKE', "%{$search}%");
