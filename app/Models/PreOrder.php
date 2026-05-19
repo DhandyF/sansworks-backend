@@ -49,4 +49,9 @@ class PreOrder extends Model
     {
         return $this->hasMany(CuttingResult::class);
     }
+
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
 }

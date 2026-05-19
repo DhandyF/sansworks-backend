@@ -11,7 +11,7 @@ class PreOrderDetailController extends Controller
     {
         $preOrder = PreOrder::findOrFail($id);
 
-        $group = PreOrder::with(['brand', 'article', 'size', 'cuttingResults.distributions.deposits'])
+        $group = PreOrder::with(['brand', 'article', 'size', 'cuttingResults.distributions.deposits', 'shipments'])
             ->where('name', $preOrder->name)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -20,14 +20,15 @@ class PreOrderDetailController extends Controller
         $cutQty = $group->sum(fn ($po) => $po->cuttingResults->sum('total_cutting'));
         $totalDistributed = $group->sum(fn ($po) => $po->cuttingResults->flatMap->distributions->sum('total_cutting'));
         $totalDeposited = $group->sum(fn ($po) => $po->cuttingResults->flatMap->distributions->flatMap->deposits->sum('total_sewing_result'));
+        $totalShipped = $group->sum(fn ($po) => $po->shipments->sum('total_shipment'));
 
         $deadlineDate = $preOrder->deadline_date?->format('Y-m-d');
         $today = now()->format('Y-m-d');
 
         $status = 'in_progress';
-        if ($totalPcs > 0 && $totalDeposited >= $totalPcs) {
+        if ($totalPcs > 0 && $totalShipped >= $totalPcs) {
             $status = 'done';
-        } elseif ($deadlineDate && $today > $deadlineDate && $totalDeposited < $totalPcs) {
+        } elseif ($deadlineDate && $today > $deadlineDate && $totalShipped < $totalPcs) {
             $status = 'overdue';
         }
 
@@ -35,14 +36,15 @@ class PreOrderDetailController extends Controller
             $poCutQty = $po->cuttingResults->sum('total_cutting');
             $poDistributed = $po->cuttingResults->flatMap->distributions->sum('total_cutting');
             $poDeposited = $po->cuttingResults->flatMap->distributions->flatMap->deposits->sum('total_sewing_result');
+            $poShipped = $po->shipments->sum('total_shipment');
 
             $poDeadline = $po->deadline_date?->format('Y-m-d');
             $today = now()->format('Y-m-d');
 
             $poStatus = 'in_progress';
-            if ($po->total_pcs > 0 && $poDeposited >= $po->total_pcs) {
+            if ($po->total_pcs > 0 && $poShipped >= $po->total_pcs) {
                 $poStatus = 'done';
-            } elseif ($poDeadline && $today > $poDeadline && $poDeposited < $po->total_pcs) {
+            } elseif ($poDeadline && $today > $poDeadline && $poShipped < $po->total_pcs) {
                 $poStatus = 'overdue';
             }
 
@@ -89,6 +91,7 @@ class PreOrderDetailController extends Controller
                 'cutting_remaining' => (int) ($po->total_pcs - $poCutQty),
                 'distributed_qty' => (int) $poDistributed,
                 'deposited_qty' => (int) $poDeposited,
+                'shipped_qty' => (int) $po->shipments->sum('total_shipment'),
                 'deadline_date' => $po->deadline_date?->toIso8601String(),
                 'status' => $poStatus,
                 'distributions' => $distributions,
@@ -113,6 +116,7 @@ class PreOrderDetailController extends Controller
                 'cutting_remaining' => (int) ($totalPcs - $cutQty),
                 'distributed_qty' => (int) $totalDistributed,
                 'deposited_qty' => (int) $totalDeposited,
+                'shipped_qty' => (int) $totalShipped,
                 'status' => $status,
                 'done_count' => $doneCount,
                 'in_progress_count' => $inProgressCount,
