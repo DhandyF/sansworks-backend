@@ -88,7 +88,7 @@ class PreOrderDetailController extends Controller
                 'size' => $po->size ? ['id' => $po->size->id, 'abbreviation' => $po->size->abbreviation] : null,
                 'total_pcs' => $po->total_pcs,
                 'cut_qty' => (int) $poCutQty,
-                'cutting_remaining' => (int) ($po->total_pcs - $poCutQty),
+                'cutting_remaining' => (int) ($poCutQty - $poDistributed),
                 'distributed_qty' => (int) $poDistributed,
                 'deposited_qty' => (int) $poDeposited,
                 'shipped_qty' => (int) $po->shipments->sum('total_shipment'),
@@ -113,7 +113,7 @@ class PreOrderDetailController extends Controller
             'summary' => [
                 'total_pcs' => (int) $totalPcs,
                 'cut_qty' => (int) $cutQty,
-                'cutting_remaining' => (int) ($totalPcs - $cutQty),
+                'cutting_remaining' => (int) ($cutQty - $totalDistributed),
                 'distributed_qty' => (int) $totalDistributed,
                 'deposited_qty' => (int) $totalDeposited,
                 'shipped_qty' => (int) $totalShipped,
