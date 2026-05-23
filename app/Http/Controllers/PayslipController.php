@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Tailor;
 use App\Models\DepositCuttingResult;
+use App\Models\RepairDeposit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -22,7 +23,15 @@ class PayslipController extends Controller
         $startDate = Carbon::parse($validated['start_date'])->startOfDay();
         $endDate = Carbon::parse($validated['end_date'])->endOfDay();
 
+        // Production deposits
         $deposits = DepositCuttingResult::with(['cuttingDistribution.article', 'cuttingDistribution.size'])
+            ->where('tailor_id', $tailor->id)
+            ->whereDate('deposit_date', '>=', $startDate->toDateString())
+            ->whereDate('deposit_date', '<=', $endDate->toDateString())
+            ->get();
+
+        // Repair deposits (earnings)
+        $repairDeposits = RepairDeposit::with(['repair.article'])
             ->where('tailor_id', $tailor->id)
             ->whereDate('deposit_date', '>=', $startDate->toDateString())
             ->whereDate('deposit_date', '<=', $endDate->toDateString())
@@ -33,7 +42,7 @@ class PayslipController extends Controller
 
         if ($useWeeks) {
             $weeks = $this->buildWeeks($startDate, $endDate);
-            $grouped = $this->groupByWeeks($deposits, $weeks);
+            $grouped = $this->groupByWeeks($deposits, $weeks, $repairDeposits);
         } else {
             $dateRange = [];
             $current = $startDate->copy();
@@ -41,11 +50,12 @@ class PayslipController extends Controller
                 $dateRange[] = $current->format('Y-m-d');
                 $current->addDay();
             }
-            $grouped = $this->groupByDays($deposits, $dateRange);
+            $grouped = $this->groupByDays($deposits, $dateRange, $repairDeposits);
         }
 
-        $grandTotal = collect($grouped)->sum('total_price');
+        $grandTotal = collect($grouped)->sum('earnings');
         $grandQty = collect($grouped)->sum('total_qty');
+        $grandRepairCharges = collect($grouped)->sum('repair_charges');
 
         $periodLabel = $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y');
         if ($startDate->equalTo($endDate)) {
@@ -76,7 +86,9 @@ class PayslipController extends Controller
             'summary' => [
                 'total_articles' => count($grouped),
                 'total_qty' => $grandQty,
-                'total_price' => round($grandTotal, 2),
+                'earnings' => round($grandTotal, 2),
+                'repair_charges' => round($grandRepairCharges, 2),
+                'net_total' => round($grandTotal - $grandRepairCharges, 2),
             ],
         ]);
     }
@@ -121,82 +133,155 @@ class PayslipController extends Controller
         return $days;
     }
 
-    private function groupByWeeks($deposits, $weeks)
+    private function groupByWeeks($deposits, $weeks, $repairDeposits)
     {
-        return $deposits->groupBy(function ($dep) {
+        $production = $deposits->groupBy(function ($dep) {
             return $dep->cuttingDistribution?->article?->id ?? 'unknown';
-        })->map(function ($group, $articleId) use ($weeks) {
-            $articleName = $group->first()->cuttingDistribution?->article?->name ?? 'Unknown Article';
+        });
+
+        $repairs = $repairDeposits->groupBy(function ($dep) {
+            return $dep->repair?->article?->id ?? 'unknown_repair';
+        });
+
+        $allArticleIds = array_unique(array_merge(
+            $production->keys()->all(),
+            $repairs->keys()->all()
+        ));
+
+        $grouped = [];
+        foreach ($allArticleIds as $articleId) {
+            $prodGroup = $production->get($articleId);
+            $repairGroup = $repairs->get($articleId);
+
+            $articleName = $prodGroup?->first()?->cuttingDistribution?->article?->name
+                ?? $repairGroup?->first()?->repair?->article?->name
+                ?? 'Unknown Article';
+
             $weekly = [];
             foreach ($weeks as $w) {
                 $weekly[$w['key']] = 0;
             }
-            $totalQty = 0;
-            $totalPrice = 0;
+
+            $prodQty = 0;
+            $prodTotalPrice = 0;
             $cuttingPricePerPcs = 0;
-            foreach ($group as $dep) {
-                $depDate = Carbon::parse($dep->deposit_date)->format('Y-m-d');
-                foreach ($weeks as $w) {
-                    if ($depDate >= $w['start'] && $depDate <= $w['end']) {
-                        $weekly[$w['key']] += (int) $dep->total_sewing_result;
-                        break;
+
+            if ($prodGroup) {
+                foreach ($prodGroup as $dep) {
+                    $depDate = Carbon::parse($dep->deposit_date)->format('Y-m-d');
+                    foreach ($weeks as $w) {
+                        if ($depDate >= $w['start'] && $depDate <= $w['end']) {
+                            $weekly[$w['key']] += (int) $dep->total_sewing_result;
+                            break;
+                        }
+                    }
+                    $qty = (int) $dep->total_sewing_result;
+                    $prodQty += $qty;
+                    $prodTotalPrice += (float) $dep->total_price;
+                    if ($qty > 0 && !empty($dep->cutting_price_per_pcs)) {
+                        $cuttingPricePerPcs = (float) $dep->cutting_price_per_pcs;
                     }
                 }
-                $qty = (int) $dep->total_sewing_result;
-                $totalQty += $qty;
-                $totalPrice += (float) $dep->total_price;
-                if ($qty > 0 && !empty($dep->cutting_price_per_pcs)) {
-                    $cuttingPricePerPcs = (float) $dep->cutting_price_per_pcs;
+            }
+
+            $repairQty = 0;
+            $repairCharges = 0;
+            if ($repairGroup) {
+                foreach ($repairGroup as $dep) {
+                    $repairQty += (int) $dep->total_deposit;
+                    $repairCharges += (float) $dep->charge_amount;
                 }
             }
-            $pricePerPcs = $totalQty > 0 ? round($totalPrice / $totalQty, 2) : 0;
-            return [
+
+            $pricePerPcs = $prodQty > 0 ? round($prodTotalPrice / $prodQty, 2) : 0;
+
+            $grouped[] = [
                 'article_name' => $articleName,
                 'article_id' => $articleId,
                 'columns' => $weekly,
-                'total_qty' => $totalQty,
+                'total_qty' => $prodQty + $repairQty,
+                'repair_qty' => $repairQty,
                 'price_per_pcs' => $pricePerPcs,
                 'cutting_price_per_pcs' => $cuttingPricePerPcs,
-                'total_price' => round($totalPrice, 2),
-                'deposit_count' => $group->count(),
+                'earnings' => round($prodTotalPrice, 2),
+                'repair_charges' => round($repairCharges, 2),
             ];
-        })->values()->all();
+        }
+
+        return $grouped;
     }
 
-    private function groupByDays($deposits, $dateRange)
+    private function groupByDays($deposits, $dateRange, $repairDeposits)
     {
         $daily = array_fill_keys($dateRange, 0);
-        return $deposits->groupBy(function ($dep) {
+
+        $production = $deposits->groupBy(function ($dep) {
             return $dep->cuttingDistribution?->article?->id ?? 'unknown';
-        })->map(function ($group, $articleId) use ($dateRange, $daily) {
-            $articleName = $group->first()->cuttingDistribution?->article?->name ?? 'Unknown Article';
+        });
+
+        $repairs = $repairDeposits->groupBy(function ($dep) {
+            return $dep->repair?->article?->id ?? 'unknown_repair';
+        });
+
+        $allArticleIds = array_unique(array_merge(
+            $production->keys()->all(),
+            $repairs->keys()->all()
+        ));
+
+        $grouped = [];
+        foreach ($allArticleIds as $articleId) {
+            $prodGroup = $production->get($articleId);
+            $repairGroup = $repairs->get($articleId);
+
+            $articleName = $prodGroup?->first()?->cuttingDistribution?->article?->name
+                ?? $repairGroup?->first()?->repair?->article?->name
+                ?? 'Unknown Article';
+
             $d = $daily;
-            $totalQty = 0;
-            $totalPrice = 0;
+
+            $prodQty = 0;
+            $prodTotalPrice = 0;
             $cuttingPricePerPcs = 0;
-            foreach ($group as $dep) {
-                $depDate = Carbon::parse($dep->deposit_date)->format('Y-m-d');
-                if (isset($d[$depDate])) {
-                    $d[$depDate] += (int) $dep->total_sewing_result;
-                }
-                $qty = (int) $dep->total_sewing_result;
-                $totalQty += $qty;
-                $totalPrice += (float) $dep->total_price;
-                if ($qty > 0 && !empty($dep->cutting_price_per_pcs)) {
-                    $cuttingPricePerPcs = (float) $dep->cutting_price_per_pcs;
+
+            if ($prodGroup) {
+                foreach ($prodGroup as $dep) {
+                    $depDate = Carbon::parse($dep->deposit_date)->format('Y-m-d');
+                    if (isset($d[$depDate])) {
+                        $d[$depDate] += (int) $dep->total_sewing_result;
+                    }
+                    $qty = (int) $dep->total_sewing_result;
+                    $prodQty += $qty;
+                    $prodTotalPrice += (float) $dep->total_price;
+                    if ($qty > 0 && !empty($dep->cutting_price_per_pcs)) {
+                        $cuttingPricePerPcs = (float) $dep->cutting_price_per_pcs;
+                    }
                 }
             }
-            $pricePerPcs = $totalQty > 0 ? round($totalPrice / $totalQty, 2) : 0;
-            return [
+
+            $repairQty = 0;
+            $repairCharges = 0;
+            if ($repairGroup) {
+                foreach ($repairGroup as $dep) {
+                    $repairQty += (int) $dep->total_deposit;
+                    $repairCharges += (float) $dep->charge_amount;
+                }
+            }
+
+            $pricePerPcs = $prodQty > 0 ? round($prodTotalPrice / $prodQty, 2) : 0;
+
+            $grouped[] = [
                 'article_name' => $articleName,
                 'article_id' => $articleId,
                 'columns' => $d,
-                'total_qty' => $totalQty,
+                'total_qty' => $prodQty + $repairQty,
+                'repair_qty' => $repairQty,
                 'price_per_pcs' => $pricePerPcs,
                 'cutting_price_per_pcs' => $cuttingPricePerPcs,
-                'total_price' => round($totalPrice, 2),
-                'deposit_count' => $group->count(),
+                'earnings' => round($prodTotalPrice, 2),
+                'repair_charges' => round($repairCharges, 2),
             ];
-        })->values()->all();
+        }
+
+        return $grouped;
     }
 }

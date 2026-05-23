@@ -10,6 +10,8 @@ use App\Http\Controllers\DepositCuttingResultController;
 use App\Http\Controllers\PreOrderController;
 use App\Http\Controllers\PreOrderDetailController;
 use App\Http\Controllers\PayslipController;
+use App\Http\Controllers\RepairController;
+use App\Http\Controllers\RepairDepositController;
 use App\Http\Controllers\ShipmentController;
 use App\Http\Controllers\SizeController;
 use App\Http\Controllers\TailorController;
@@ -44,4 +46,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('payslips/generate', [PayslipController::class, 'generate']);
     Route::get('shipments/remaining', [ShipmentController::class, 'remaining']);
     Route::apiResource('shipments', ShipmentController::class);
+    Route::get('repairs/generate-name', [RepairController::class, 'generateName']);
+    Route::get('repairs/available-articles', [RepairController::class, 'availableArticles']);
+    Route::apiResource('repairs', RepairController::class);
+    Route::get('repair-deposits/remaining', [RepairDepositController::class, 'remaining']);
+    Route::apiResource('repair-deposits', RepairDepositController::class);
 });
