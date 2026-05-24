@@ -6,6 +6,7 @@ use App\Models\Repair;
 use App\Models\RepairDeposit;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class RepairDepositService extends BaseService
 {
@@ -19,7 +20,7 @@ class RepairDepositService extends BaseService
         $query = $this->model->with(['repair.tailor', 'repair.brand', 'repair.article', 'tailor']);
 
         if ($search) {
-            $query->whereHas('repair', fn($q) => $q->where('name', 'LIKE', "%{$search}%"));
+            $query->whereHas('repair', fn($q) => $q->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')")));
         }
 
         if ($tailorId) {

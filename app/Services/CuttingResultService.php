@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CuttingResult;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class CuttingResultService extends BaseService
 {
@@ -17,7 +18,7 @@ class CuttingResultService extends BaseService
         $query = $this->model->with(['preOrder', 'brand', 'article', 'size']);
 
         if ($search) {
-            $query->where('name', 'LIKE', "%{$search}%");
+            $query->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')"));
         }
 
         if ($brandId) {

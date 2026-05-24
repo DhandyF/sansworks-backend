@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CuttingDistribution;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class CuttingDistributionService extends BaseService
 {
@@ -17,7 +18,7 @@ class CuttingDistributionService extends BaseService
         $query = $this->model->with(['cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size', 'deposits']);
 
         if ($search) {
-            $query->where('name', 'LIKE', "%{$search}%");
+            $query->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')"));
         }
 
         if ($brandId) {

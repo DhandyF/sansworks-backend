@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Brand;
 use App\Models\PreOrder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class PreOrderService extends BaseService
 {
@@ -24,7 +25,7 @@ class PreOrderService extends BaseService
         $query = $this->model->with(['brand', 'article', 'size', 'cuttingResults.distributions.deposits', 'shipments']);
 
         if ($search) {
-            $query->where('name', 'LIKE', "%{$search}%");
+            $query->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')"));
         }
 
         if ($brandId) {

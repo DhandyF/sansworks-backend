@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Shipment;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class ShipmentService extends BaseService
 {
@@ -17,7 +18,7 @@ class ShipmentService extends BaseService
         $query = $this->model->with(['preOrder.brand', 'preOrder.article', 'preOrder.size']);
 
         if ($search) {
-            $query->whereHas('preOrder', fn($q) => $q->where('name', 'LIKE', "%{$search}%"));
+            $query->whereHas('preOrder', fn($q) => $q->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')")));
         }
 
         if ($brandId) {

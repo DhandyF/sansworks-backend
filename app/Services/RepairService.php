@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Repair;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class RepairService extends BaseService
 {
@@ -17,7 +18,7 @@ class RepairService extends BaseService
         $query = $this->model->with(['tailor', 'brand', 'article']);
 
         if ($search) {
-            $query->where('name', 'LIKE', "%{$search}%");
+            $query->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')"));
         }
 
         if ($tailorId) {

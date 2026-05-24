@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Article;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class ArticleService extends BaseService
 {
@@ -17,7 +18,7 @@ class ArticleService extends BaseService
         $query = $this->model->with('brand');
 
         if ($search) {
-            $query->where('name', 'LIKE', "%{$search}%");
+            $query->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')"));
         }
 
         if ($brandId) {

@@ -18,7 +18,7 @@ abstract class BaseService
         $query = $this->model->newQuery();
 
         if ($search) {
-            $query->where($searchColumn, 'LIKE', "%{$search}%");
+            $query->where($searchColumn, 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER({$searchColumn})"), 'LIKE', DB::raw("LOWER('%{$search}%')"));
         }
 
         return $query->paginate($perPage);
