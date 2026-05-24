@@ -48,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('shipments', ShipmentController::class);
     Route::get('repairs/generate-name', [RepairController::class, 'generateName']);
     Route::get('repairs/available-articles', [RepairController::class, 'availableArticles']);
+    Route::get('repairs/sewing-price', [RepairController::class, 'getSewingPrice']);
     Route::apiResource('repairs', RepairController::class);
     Route::get('repair-deposits/remaining', [RepairDepositController::class, 'remaining']);
     Route::apiResource('repair-deposits', RepairDepositController::class);

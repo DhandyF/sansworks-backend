@@ -69,23 +69,30 @@ class RepairController extends Controller
             'brand_id' => 'nullable|exists:brands,id',
         ]);
 
-        $articlesWithPrice = \App\Models\DepositCuttingResult::query()
+        $articles = \App\Models\Article::query()
+            ->when($validated['brand_id'] ?? null, fn($q, $brandId) => $q->where('brand_id', $brandId))
+            ->select('id', 'name')
+            ->get();
+
+        return response()->json(['data' => $articles]);
+    }
+
+    public function getSewingPrice(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'tailor_id' => 'required|exists:tailors,id',
+            'article_id' => 'required|exists:articles,id',
+        ]);
+
+        $price = \App\Models\DepositCuttingResult::query()
             ->join('cutting_distributions', 'deposit_cutting_results.cutting_distribution_id', '=', 'cutting_distributions.id')
             ->join('cutting_results', 'cutting_distributions.cutting_result_id', '=', 'cutting_results.id')
             ->join('pre_orders', 'cutting_results.pre_order_id', '=', 'pre_orders.id')
             ->join('articles', 'pre_orders.article_id', '=', 'articles.id')
-            ->when($validated['brand_id'] ?? null, fn($q, $brandId) => $q->where('articles.brand_id', $brandId))
-            ->select('articles.id', 'articles.name', 'deposit_cutting_results.cutting_price_per_pcs')
-            ->distinct()
-            ->get()
-            ->groupBy('id')
-            ->map(fn($group) => [
-                'id' => $group->first()['id'],
-                'name' => $group->first()['name'],
-                'cutting_price_per_pcs' => $group->first()['cutting_price_per_pcs'],
-            ])
-            ->values();
+            ->where('cutting_distributions.tailor_id', $validated['tailor_id'])
+            ->where('articles.id', $validated['article_id'])
+            ->value('deposit_cutting_results.cutting_price_per_pcs');
 
-        return response()->json(['data' => $articlesWithPrice]);
+        return response()->json(['price' => $price ?? 0]);
     }
 }
