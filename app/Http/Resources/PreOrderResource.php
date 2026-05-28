@@ -18,7 +18,7 @@ class PreOrderResource extends JsonResource
             'pre_order_date' => $this->pre_order_date?->toIso8601String(),
             'deadline_date' => $this->deadline_date?->toIso8601String(),
             'total_pcs' => $this->total_pcs,
-            'cut_qty' => $this->when($this->relationLoaded('cuttingResults'), fn () => (int) $this->cuttingResults->sum('total_cutting')),
+            'cut_qty' => $this->when($this->relationLoaded('cuttingResults'), fn () => (int) min($this->total_pcs, $this->cuttingResults->sum('total_cutting'))),
             'excess_cutting' => $this->when($this->relationLoaded('cuttingResults'), fn () => (float) $this->cuttingResults->sum('excess_cutting')),
             'remaining' => $this->when($this->relationLoaded('cuttingResults'), fn () => max(0, $this->total_pcs - (int) $this->cuttingResults->sum('total_cutting'))),
             'deposited_qty' => $this->when($this->relationLoaded('cuttingResults'), fn () => (int) $this->cuttingResults->flatMap->distributions->flatMap->deposits->sum('total_sewing_result')),
