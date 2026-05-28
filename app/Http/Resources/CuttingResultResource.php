@@ -17,6 +17,7 @@ class CuttingResultResource extends JsonResource
             'article_id' => $this->article_id,
             'size_id' => $this->size_id,
             'total_cutting' => $this->total_cutting,
+            'excess_cutting' => $this->excess_cutting ?? 0,
             'remaining' => $this->remaining,
             'cutting_date' => $this->cutting_date?->toIso8601String(),
             'notes' => $this->notes,

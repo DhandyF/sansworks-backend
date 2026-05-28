@@ -15,6 +15,7 @@ class UpdateCuttingResultRequest extends FormRequest
     {
         return [
             'total_cutting' => ['sometimes', 'integer', 'min:1'],
+            'excess_cutting' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'cutting_date' => ['sometimes', 'date'],
             'notes' => ['nullable', 'string'],
         ];

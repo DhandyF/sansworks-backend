@@ -19,6 +19,7 @@ class CuttingResult extends Model
         'article_id',
         'size_id',
         'total_cutting',
+        'excess_cutting',
         'remaining',
         'cutting_date',
         'notes',
