@@ -21,6 +21,8 @@ class UpdateUserRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:20'],
             'role' => ['sometimes', 'in:admin,client,operator'],
             'status' => ['sometimes', 'in:active,inactive'],
+            'brands' => ['sometimes', 'array'],
+            'brands.*' => ['uuid', 'exists:brands,id'],
         ];
     }
 }

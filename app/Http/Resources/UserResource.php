@@ -16,6 +16,7 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'role' => $this->role,
             'status' => $this->status,
+            'brands' => BrandResource::collection($this->whenLoaded('brands')),
             'created_at' => $this->created_at->toIso8601String(),
             'updated_at' => $this->updated_at->toIso8601String(),
         ];

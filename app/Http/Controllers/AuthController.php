@@ -45,6 +45,7 @@ class AuthController extends Controller
             ], 403);
         }
 
+        $user->load('brands');
         $token = $user->createToken('auth-token')->plainTextToken;
 
         $this->activityLog->log('auth.login', 'user', $user->id, [
@@ -78,6 +79,6 @@ class AuthController extends Controller
 
     public function me(): JsonResponse
     {
-        return response()->json(new UserResource(auth()->user()));
+        return response()->json(new UserResource(auth()->user()->load('brands')));
     }
 }

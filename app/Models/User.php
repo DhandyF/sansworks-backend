@@ -32,4 +32,25 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function brands()
+    {
+        return $this->belongsToMany(Brand::class, 'brand_user', 'user_id', 'brand_id');
+    }
+
+    public function hasBrandAccess($brandId)
+    {
+        // Admin and operator have full access to all brands
+        if ($this->role === 'admin' || $this->role === 'operator') {
+            return true;
+        }
+
+        // Client users can only access assigned brands
+        if ($this->role === 'client') {
+            return $this->brands()->where('brands.id', $brandId)->exists();
+        }
+
+        // Other roles (if any) get no brand access
+        return false;
+    }
 }

@@ -16,24 +16,48 @@ class UserController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return UserResource::collection($this->service->paginate($request->integer('per_page', 15), $request->query('search')));
+        $query = $this->service->paginate($request->integer('per_page', 15), $request->query('search'));
+        $query->load('brands');
+        return UserResource::collection($query);
     }
 
     public function store(StoreUserRequest $request): JsonResponse
     {
-        $user = $this->service->create($request->validated());
+        $data = $request->validated();
+        $brands = $data['brands'] ?? null;
+        unset($data['brands']);
+
+        $user = $this->service->create($data);
+
+        if ($brands !== null) {
+            $user->brands()->sync($brands);
+        }
+
+        $user->load('brands');
 
         return response()->json(new UserResource($user), 201);
     }
 
     public function show(string $id): JsonResponse
     {
-        return response()->json(new UserResource($this->service->find($id)));
+        $user = $this->service->find($id);
+        $user->load('brands');
+        return response()->json(new UserResource($user));
     }
 
     public function update(UpdateUserRequest $request, string $id): JsonResponse
     {
-        $user = $this->service->update($id, $request->validated());
+        $data = $request->validated();
+        $brands = $data['brands'] ?? null;
+        unset($data['brands']);
+
+        $user = $this->service->update($id, $data);
+
+        if ($brands !== null) {
+            $user->brands()->sync($brands);
+        }
+
+        $user->load('brands');
 
         return response()->json(new UserResource($user));
     }

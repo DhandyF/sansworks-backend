@@ -27,7 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('users', UserController::class);
     Route::apiResource('brands', BrandController::class);
-    Route::get('brands/{id}/production-stats', [BrandDetailController::class, 'productionStats']);
+    Route::get('brands/{id}/production-stats', [BrandDetailController::class, 'productionStats'])->middleware('brand.access');
     Route::apiResource('tailors', TailorController::class);
     Route::get('tailors/{id}/detail-stats', [TailorDetailController::class, 'detailStats']);
     Route::apiResource('sizes', SizeController::class);

@@ -16,4 +16,9 @@ class Brand extends Model
         'address',
         'status',
     ];
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'brand_user', 'brand_id', 'user_id');
+    }
 }
