@@ -54,6 +54,8 @@ class PayslipController extends Controller
         }
 
         $grandTotal = collect($grouped)->sum('earnings');
+        $grandCuttingQty = collect($grouped)->sum('cutting_qty');
+        $grandRepairQty = collect($grouped)->sum('repair_qty');
         $grandQty = collect($grouped)->sum('total_qty');
         $grandRepairCharges = collect($grouped)->sum('repair_charges');
 
@@ -85,6 +87,8 @@ class PayslipController extends Controller
             'items' => $grouped,
             'summary' => [
                 'total_articles' => count($grouped),
+                'cutting_qty' => $grandCuttingQty,
+                'repair_qty' => $grandRepairQty,
                 'total_qty' => $grandQty,
                 'earnings' => round($grandTotal, 2),
                 'repair_charges' => round($grandRepairCharges, 2),
@@ -199,8 +203,9 @@ class PayslipController extends Controller
                 'article_name' => $articleName,
                 'article_id' => $articleId,
                 'columns' => $weekly,
-                'total_qty' => $prodQty + $repairQty,
+                'cutting_qty' => $prodQty,
                 'repair_qty' => $repairQty,
+                'total_qty' => $prodQty + $repairQty,
                 'price_per_pcs' => $pricePerPcs,
                 'cutting_price_per_pcs' => $cuttingPricePerPcs,
                 'earnings' => round($prodTotalPrice, 2),
@@ -273,8 +278,9 @@ class PayslipController extends Controller
                 'article_name' => $articleName,
                 'article_id' => $articleId,
                 'columns' => $d,
-                'total_qty' => $prodQty + $repairQty,
+                'cutting_qty' => $prodQty,
                 'repair_qty' => $repairQty,
+                'total_qty' => $prodQty + $repairQty,
                 'price_per_pcs' => $pricePerPcs,
                 'cutting_price_per_pcs' => $cuttingPricePerPcs,
                 'earnings' => round($prodTotalPrice, 2),
