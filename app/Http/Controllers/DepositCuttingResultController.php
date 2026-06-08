@@ -6,6 +6,7 @@ use App\Http\Requests\DepositCuttingResult\StoreDepositCuttingResultRequest;
 use App\Http\Requests\DepositCuttingResult\StoreDepositCuttingResultBatchRequest;
 use App\Http\Requests\DepositCuttingResult\UpdateDepositCuttingResultRequest;
 use App\Http\Resources\DepositCuttingResultResource;
+use App\Http\Resources\DepositCuttingResultGroupedResource;
 use App\Services\DepositCuttingResultService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -16,7 +17,7 @@ class DepositCuttingResultController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return DepositCuttingResultResource::collection($this->service->paginate(
+        return DepositCuttingResultGroupedResource::collection($this->service->paginateGrouped(
             $request->integer('per_page', 15),
             $request->query('search'),
             $request->query('brand_filter')

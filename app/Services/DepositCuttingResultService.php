@@ -15,17 +15,104 @@ class DepositCuttingResultService extends BaseService
 
     public function paginate(int $perPage = 15, string $search = null, string $brandId = null): LengthAwarePaginator
     {
+        return $this->paginateGrouped($perPage, $search, $brandId);
+    }
+
+    public function paginateGrouped(int $perPage = 15, string $search = null, string $brandId = null): LengthAwarePaginator
+    {
         $query = $this->model->with(['cuttingDistribution.cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size']);
 
         if ($search) {
-            $query->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')"));
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                    ->orWhereHas('tailor', function ($sq) use ($search) {
+                        $sq->where('name', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('brand', function ($sq) use ($search) {
+                        $sq->where('name', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('article', function ($sq) use ($search) {
+                        $sq->where('name', 'LIKE', "%{$search}%");
+                    });
+            });
         }
 
         if ($brandId) {
             $query->where('brand_id', $brandId);
         }
 
-        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+        $deposits = $query->orderBy('created_at', 'desc')->get();
+
+        // Group by tailor_id, brand_id, article_id, and size_id
+        $groups = $deposits->groupBy(function ($item) {
+            return "{$item->tailor_id}_{$item->brand_id}_{$item->article_id}_{$item->size_id}";
+        })->map(function ($group) {
+            $first = $group->first();
+
+            // Calculate totals from deposits
+            $totalSewingResult = $group->sum('total_sewing_result');
+            $totalPrice = $group->sum('total_price');
+            $hasOverdue = $group->contains('status', 'overdue');
+
+            // Collect unique deposit dates
+            $depositDates = $group->pluck('deposit_date')
+                ->filter()
+                ->map(fn($date) => $date->toIso8601String())
+                ->unique()
+                ->sortBy(fn($date) => $date)
+                ->values()
+                ->toArray();
+
+            // Find ALL cutting_distributions that match the tailor/brand/article/size keys
+            $distributions = \App\Models\CuttingDistribution::with('deposits')
+                ->where('tailor_id', $first->tailor_id)
+                ->where('brand_id', $first->brand_id)
+                ->where('article_id', $first->article_id)
+                ->where('size_id', $first->size_id)
+                ->get();
+
+            // Calculate total distributed and remaining from ALL matching distributions
+            $totalDistributed = 0;
+            $totalDepositRemaining = 0;
+
+            foreach ($distributions as $dist) {
+                $totalDistributed += $dist->total_cutting;
+                $depositedSoFar = $dist->deposits->sum('total_sewing_result');
+                $totalDepositRemaining += max(0, $dist->total_cutting - $depositedSoFar);
+            }
+
+            return [
+                'id' => "{$first->tailor_id}_{$first->brand_id}_{$first->article_id}_{$first->size_id}",
+                'tailor_id' => $first->tailor_id,
+                'brand_id' => $first->brand_id,
+                'article_id' => $first->article_id,
+                'size_id' => $first->size_id,
+                'tailor' => $first->tailor,
+                'brand' => $first->brand,
+                'article' => $first->article,
+                'size' => $first->size,
+                'total_sewing_result' => $totalSewingResult,
+                'total_price' => $totalPrice,
+                'has_overdue' => $hasOverdue,
+                'total_distributed' => $totalDistributed,
+                'total_deposit_remaining' => $totalDepositRemaining,
+                'deposit_dates' => $depositDates,
+                'entries' => $group,
+            ];
+        })->values();
+
+        // Manual pagination
+        $page = request()->input('page', 1);
+        $total = $groups->count();
+        $items = $groups->forPage($page, $perPage);
+
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
     }
 
     public function find(string $id)
@@ -130,9 +217,11 @@ class DepositCuttingResultService extends BaseService
             ->get();
 
         foreach ($distributions as $dist) {
-            if ($remaining <= 0) break;
+            if ($remaining <= 0)
+                break;
             $depositAvailable = $dist->total_cutting - $dist->deposits->sum('total_sewing_result');
-            if ($depositAvailable <= 0) continue;
+            if ($depositAvailable <= 0)
+                continue;
 
             $qty = min($remaining, $depositAvailable);
             $existingDepositsCount = $dist->deposits->count();
