@@ -30,9 +30,10 @@ class PayslipController extends Controller
             ->whereDate('deposit_date', '<=', $endDate->toDateString())
             ->get();
 
-        // Repair deposits (earnings)
+        // Repair deposits (earnings) - only include those with charges
         $repairDeposits = RepairDeposit::with(['repair.article'])
             ->where('tailor_id', $tailor->id)
+            ->where('charge_amount', '>', 0)
             ->whereDate('deposit_date', '>=', $startDate->toDateString())
             ->whereDate('deposit_date', '<=', $endDate->toDateString())
             ->get();
@@ -192,8 +193,11 @@ class PayslipController extends Controller
             $repairCharges = 0;
             if ($repairGroup) {
                 foreach ($repairGroup as $dep) {
-                    $repairQty += (int) $dep->total_deposit;
-                    $repairCharges += (float) $dep->charge_amount;
+                    // Only include repair deposits with charges
+                    if ((float) $dep->charge_amount > 0) {
+                        $repairQty += (int) $dep->total_deposit;
+                        $repairCharges += (float) $dep->charge_amount;
+                    }
                 }
             }
 
@@ -267,8 +271,11 @@ class PayslipController extends Controller
             $repairCharges = 0;
             if ($repairGroup) {
                 foreach ($repairGroup as $dep) {
-                    $repairQty += (int) $dep->total_deposit;
-                    $repairCharges += (float) $dep->charge_amount;
+                    // Only include repair deposits with charges
+                    if ((float) $dep->charge_amount > 0) {
+                        $repairQty += (int) $dep->total_deposit;
+                        $repairCharges += (float) $dep->charge_amount;
+                    }
                 }
             }
 
