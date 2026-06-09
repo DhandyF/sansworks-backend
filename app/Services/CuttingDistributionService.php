@@ -18,7 +18,19 @@ class CuttingDistributionService extends BaseService
         $query = $this->model->with(['cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size', 'deposits']);
 
         if ($search) {
-            $query->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')"));
+            $lowerSearch = strtolower($search);
+            $query->where(function($q) use ($lowerSearch) {
+                $q->whereRaw('LOWER(name) LIKE ?', ["%{$lowerSearch}%"])
+                  ->orWhereHas('tailor', function($tq) use ($lowerSearch) {
+                      $tq->whereRaw('LOWER(name) LIKE ?', ["%{$lowerSearch}%"]);
+                  })
+                  ->orWhereHas('brand', function($bq) use ($lowerSearch) {
+                      $bq->whereRaw('LOWER(name) LIKE ?', ["%{$lowerSearch}%"]);
+                  })
+                  ->orWhereHas('cuttingResult.preOrder', function($pq) use ($lowerSearch) {
+                      $pq->whereRaw('LOWER(name) LIKE ?', ["%{$lowerSearch}%"]);
+                  });
+            });
         }
 
         if ($brandId) {
