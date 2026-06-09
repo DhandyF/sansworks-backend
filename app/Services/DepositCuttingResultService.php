@@ -24,15 +24,15 @@ class DepositCuttingResultService extends BaseService
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%{$search}%")
+                $q->where('name', 'ILIKE', "%{$search}%")
                     ->orWhereHas('tailor', function ($sq) use ($search) {
-                        $sq->where('name', 'LIKE', "%{$search}%");
+                        $sq->where('name', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereHas('brand', function ($sq) use ($search) {
-                        $sq->where('name', 'LIKE', "%{$search}%");
+                        $sq->where('name', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereHas('article', function ($sq) use ($search) {
-                        $sq->where('name', 'LIKE', "%{$search}%");
+                        $sq->where('name', 'ILIKE', "%{$search}%");
                     });
             });
         }
