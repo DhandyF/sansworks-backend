@@ -18,6 +18,7 @@ class RepairDeposit extends Model
         'deposit_date',
         'charge_amount',
         'charge_percent',
+        'default_charge_per_pcs',
     ];
 
     protected function casts(): array
@@ -25,6 +26,7 @@ class RepairDeposit extends Model
         return [
             'deposit_date' => 'date',
             'charge_amount' => 'decimal:2',
+            'default_charge_per_pcs' => 'decimal:2',
         ];
     }
 

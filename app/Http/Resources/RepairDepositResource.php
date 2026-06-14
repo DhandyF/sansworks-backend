@@ -28,6 +28,7 @@ class RepairDepositResource extends JsonResource
             'deposit_date' => $this->deposit_date?->toIso8601String(),
             'charge_amount' => (float) $this->charge_amount,
             'charge_percent' => $this->charge_percent,
+            'default_charge_per_pcs' => (float) ($this->default_charge_per_pcs ?? 0),
             'days_delay' => $daysDelay,
             'repair' => $repair ? [
                 'id' => $repair->id,

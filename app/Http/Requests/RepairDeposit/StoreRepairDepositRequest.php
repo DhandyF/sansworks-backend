@@ -18,6 +18,7 @@ class StoreRepairDepositRequest extends FormRequest
             'tailor_id' => ['required', 'exists:tailors,id'],
             'total_deposit' => ['required', 'integer', 'min:1'],
             'deposit_date' => ['required', 'date'],
+            'default_charge_per_pcs' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

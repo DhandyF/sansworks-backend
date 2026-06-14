@@ -38,40 +38,46 @@ class RepairDepositService extends BaseService
     public function create(array $data): RepairDeposit
     {
         $repair = Repair::findOrFail($data['repair_id']);
-        
+
         $chargeAmount = 0;
         $chargePercent = 0;
         $daysDelay = 0;
-        
+        $defaultChargePerPcs = $data['default_charge_per_pcs'] ?? null;
+        $depositQty = $data['total_deposit'];
+
         if (!empty($data['deposit_date']) && $repair->deadline_date) {
             $depositDate = Carbon::parse($data['deposit_date']);
             $deadlineDate = Carbon::parse($repair->deadline_date);
-            
+
             if ($depositDate->gt($deadlineDate)) {
                 $daysDelay = $depositDate->diffInDays($deadlineDate, true);
             }
-            
-            $totalValue = $repair->sewing_price * $data['total_deposit'];
-            
+
             if ($daysDelay >= 1 && $daysDelay <= 3) {
-                $chargePercent = 10;
-                $chargeAmount = $totalValue * 0.10;
+                // Use default charge per pcs
+                $chargeAmount = ($defaultChargePerPcs ?? 0) * $depositQty;
+                $chargePercent = 0; // Not percentage-based anymore
             } elseif ($daysDelay >= 4 && $daysDelay <= 10) {
-                $chargePercent = 50;
-                $chargeAmount = $totalValue * 0.50;
-            } elseif ($daysDelay > 10) {
+                // Double the default charge per pcs
+                $chargeAmount = (($defaultChargePerPcs ?? 0) * 2) * $depositQty;
+                $chargePercent = 0;
+            } elseif ($daysDelay >= 11) {
+                // 100% of sewing price (for 11+ days delay)
+                $chargeAmount = $repair->sewing_price * $depositQty;
                 $chargePercent = 100;
-                $chargeAmount = $totalValue;
+            } else {
+                $chargeAmount = 0;
+                $chargePercent = 0;
             }
         }
-        
+
         $data['charge_amount'] = $chargeAmount;
         $data['charge_percent'] = $chargePercent;
-        
+
         $deposit = $this->model->create($data);
-        
+
         $this->updateRepairStatus($repair);
-        
+
         return $deposit;
     }
 
@@ -81,43 +87,49 @@ class RepairDepositService extends BaseService
         $oldData = $deposit->toArray();
 
         $repair = $deposit->repair;
-        
+
         $chargeAmount = 0;
         $chargePercent = 0;
-        
+        $daysDelay = 0;
+        $defaultChargePerPcs = $data['default_charge_per_pcs'] ?? $deposit->default_charge_per_pcs ?? null;
+        $depositQty = $data['total_deposit'] ?? $deposit->total_deposit;
+
         if (!empty($data['deposit_date']) && $repair->deadline_date) {
             $depositDate = Carbon::parse($data['deposit_date']);
             $deadlineDate = Carbon::parse($repair->deadline_date);
-            
-            $daysDelay = 0;
+
             if ($depositDate->gt($deadlineDate)) {
                 $daysDelay = $depositDate->diffInDays($deadlineDate, true);
             }
-            
-            $totalValue = $repair->sewing_price * ($data['total_deposit'] ?? $deposit->total_deposit);
-            
+
             if ($daysDelay >= 1 && $daysDelay <= 3) {
-                $chargePercent = 10;
-                $chargeAmount = $totalValue * 0.10;
+                // Use default charge per pcs
+                $chargeAmount = ($defaultChargePerPcs ?? 0) * $depositQty;
+                $chargePercent = 0; // Not percentage-based anymore
             } elseif ($daysDelay >= 4 && $daysDelay <= 10) {
-                $chargePercent = 50;
-                $chargeAmount = $totalValue * 0.50;
-            } elseif ($daysDelay > 10) {
+                // Double the default charge per pcs
+                $chargeAmount = (($defaultChargePerPcs ?? 0) * 2) * $depositQty;
+                $chargePercent = 0;
+            } elseif ($daysDelay >= 11) {
+                // 100% of sewing price (for 11+ days delay)
+                $chargeAmount = $repair->sewing_price * $depositQty;
                 $chargePercent = 100;
-                $chargeAmount = $totalValue;
+            } else {
+                $chargeAmount = 0;
+                $chargePercent = 0;
             }
         }
-        
+
         $data['charge_amount'] = $chargeAmount;
         $data['charge_percent'] = $chargePercent;
-        
+
         $deposit->update($data);
         $updatedRecord = $deposit->fresh();
-        
+
         $this->updateRepairStatus($repair);
-        
+
         $this->logUpdate($oldData, $updatedRecord->toArray());
-        
+
         return $updatedRecord;
     }
 
