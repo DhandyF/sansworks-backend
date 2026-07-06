@@ -56,7 +56,48 @@ abstract class BaseService
         $recordData = $record->toArray();
 
         DB::transaction(fn () => $record->delete());
-        
+
         $this->logDelete($recordData);
+    }
+
+    public function getTrashed(int $perPage = 15, string $search = null, string $searchColumn = 'name'): LengthAwarePaginator
+    {
+        $query = $this->model->onlyTrashed();
+
+        if ($search) {
+            $query->where($searchColumn, 'LIKE', "%{$search}%");
+        }
+
+        return $query->latest('deleted_at')->paginate($perPage);
+    }
+
+    public function restore(string $id): Model
+    {
+        $record = $this->model->withTrashed()->findOrFail($id);
+        $record->restore();
+
+        $this->getActivityLogService()->log(
+            $this->getSubjectType() . '.restored',
+            $this->getSubjectType(),
+            $record->id,
+            $record->toArray()
+        );
+
+        return $record;
+    }
+
+    public function forceDelete(string $id): void
+    {
+        $record = $this->model->withTrashed()->findOrFail($id);
+        $recordData = $record->toArray();
+
+        DB::transaction(fn () => $record->forceDelete());
+
+        $this->getActivityLogService()->log(
+            $this->getSubjectType() . '.force_deleted',
+            $this->getSubjectType(),
+            $recordData['id'] ?? uniqid(),
+            $recordData
+        );
     }
 }

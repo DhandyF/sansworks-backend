@@ -60,4 +60,18 @@ class CuttingResultController extends Controller
         $this->service->delete($id);
         return response()->json(null, 204);
     }
+
+    public function trashed(Request $request): AnonymousResourceCollection
+    {
+        return CuttingResultResource::collection($this->service->getTrashed(
+            $request->integer('per_page', 15),
+            $request->query('search')
+        ));
+    }
+
+    public function restore(string $id)
+    {
+        $cuttingResult = $this->service->restore($id);
+        return response()->json(new CuttingResultResource($cuttingResult->load(['preOrder', 'brand', 'article', 'size'])));
+    }
 }

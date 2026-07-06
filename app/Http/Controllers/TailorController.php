@@ -44,4 +44,14 @@ class TailorController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function trashed(Request $request): AnonymousResourceCollection
+    {
+        return TailorResource::collection($this->service->getTrashed($request->integer('per_page', 15), $request->query('search')));
+    }
+
+    public function restore(string $id): JsonResponse
+    {
+        return response()->json(new TailorResource($this->service->restore($id)));
+    }
 }

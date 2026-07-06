@@ -48,6 +48,20 @@ class RepairController extends Controller
         return response()->json(null, 204);
     }
 
+    public function trashed(Request $request): AnonymousResourceCollection
+    {
+        return RepairResource::collection($this->service->getTrashed(
+            $request->integer('per_page', 15),
+            $request->query('search')
+        ));
+    }
+
+    public function restore(string $id): JsonResponse
+    {
+        $repair = $this->service->restore($id);
+        return response()->json(new RepairResource($repair->load(['tailor', 'brand', 'article'])));
+    }
+
     public function generateName(Request $request)
     {
         $validated = $request->validate([

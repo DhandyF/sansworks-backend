@@ -71,4 +71,18 @@ class PreOrderController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function trashed(Request $request): AnonymousResourceCollection
+    {
+        return PreOrderResource::collection($this->service->getTrashed(
+            $request->integer('per_page', 15),
+            $request->query('search')
+        ));
+    }
+
+    public function restore(string $id): JsonResponse
+    {
+        $preOrder = $this->service->restore($id);
+        return response()->json(new PreOrderResource($preOrder->load(['brand', 'article', 'size'])));
+    }
 }

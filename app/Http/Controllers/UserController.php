@@ -68,4 +68,18 @@ class UserController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function trashed(Request $request): AnonymousResourceCollection
+    {
+        $query = $this->service->getTrashed($request->integer('per_page', 15), $request->query('search'));
+        $query->load('brands');
+        return UserResource::collection($query);
+    }
+
+    public function restore(string $id): JsonResponse
+    {
+        $user = $this->service->restore($id);
+        $user->load('brands');
+        return response()->json(new UserResource($user));
+    }
 }

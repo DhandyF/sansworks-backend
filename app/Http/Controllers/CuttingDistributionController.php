@@ -64,4 +64,18 @@ class CuttingDistributionController extends Controller
         $this->service->delete($id);
         return response()->json(null, 204);
     }
+
+    public function trashed(Request $request): AnonymousResourceCollection
+    {
+        return CuttingDistributionResource::collection($this->service->getTrashed(
+            $request->integer('per_page', 15),
+            $request->query('search')
+        ));
+    }
+
+    public function restore(string $id)
+    {
+        $distribution = $this->service->restore($id);
+        return response()->json(new CuttingDistributionResource($distribution->load(['cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size'])));
+    }
 }

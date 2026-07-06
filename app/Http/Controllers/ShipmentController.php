@@ -45,6 +45,20 @@ class ShipmentController extends Controller
         return response()->json(null, 204);
     }
 
+    public function trashed(Request $request): AnonymousResourceCollection
+    {
+        return ShipmentResource::collection($this->service->getTrashed(
+            $request->integer('per_page', 15),
+            $request->query('search')
+        ));
+    }
+
+    public function restore(string $id)
+    {
+        $shipment = $this->service->restore($id);
+        return response()->json(new ShipmentResource($shipment->load(['preOrder.brand', 'preOrder.article', 'preOrder.size'])));
+    }
+
     public function remaining(Request $request)
     {
         $validated = $request->validate([

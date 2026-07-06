@@ -54,4 +54,18 @@ class DepositCuttingResultController extends Controller
         $this->service->delete($id);
         return response()->json(null, 204);
     }
+
+    public function trashed(Request $request): AnonymousResourceCollection
+    {
+        return DepositCuttingResultResource::collection($this->service->getTrashed(
+            $request->integer('per_page', 15),
+            $request->query('search')
+        ));
+    }
+
+    public function restore(string $id)
+    {
+        $deposit = $this->service->restore($id);
+        return response()->json(new DepositCuttingResultResource($deposit->load(['cuttingDistribution.cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size'])));
+    }
 }

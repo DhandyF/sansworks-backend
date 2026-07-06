@@ -45,6 +45,20 @@ class RepairDepositController extends Controller
         return response()->json(null, 204);
     }
 
+    public function trashed(Request $request): AnonymousResourceCollection
+    {
+        return RepairDepositResource::collection($this->service->getTrashed(
+            $request->integer('per_page', 15),
+            $request->query('search')
+        ));
+    }
+
+    public function restore(string $id)
+    {
+        $deposit = $this->service->restore($id);
+        return response()->json(new RepairDepositResource($deposit->load(['repair.tailor', 'repair.brand', 'repair.article', 'tailor'])));
+    }
+
     public function remaining(Request $request)
     {
         $validated = $request->validate([
