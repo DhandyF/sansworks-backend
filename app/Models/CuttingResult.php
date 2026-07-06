@@ -57,4 +57,15 @@ class CuttingResult extends Model
     {
         return $this->hasMany(CuttingDistribution::class);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (CuttingResult $cr) {
+            $cr->distributions()->each(fn ($d) => $d->delete());
+        });
+
+        static::restoring(function (CuttingResult $cr) {
+            $cr->distributions()->onlyTrashed()->each(fn ($d) => $d->restore());
+        });
+    }
 }

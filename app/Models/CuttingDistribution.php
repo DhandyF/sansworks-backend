@@ -63,4 +63,15 @@ class CuttingDistribution extends Model
     {
         return $this->hasMany(DepositCuttingResult::class);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (CuttingDistribution $cd) {
+            $cd->deposits()->each(fn ($d) => $d->delete());
+        });
+
+        static::restoring(function (CuttingDistribution $cd) {
+            $cd->deposits()->onlyTrashed()->each(fn ($d) => $d->restore());
+        });
+    }
 }

@@ -55,4 +55,17 @@ class PreOrder extends Model
     {
         return $this->hasMany(Shipment::class);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (PreOrder $preOrder) {
+            $preOrder->cuttingResults()->each(fn ($cr) => $cr->delete());
+            $preOrder->shipments()->each(fn ($s) => $s->delete());
+        });
+
+        static::restoring(function (PreOrder $preOrder) {
+            $preOrder->cuttingResults()->onlyTrashed()->each(fn ($cr) => $cr->restore());
+            $preOrder->shipments()->onlyTrashed()->each(fn ($s) => $s->restore());
+        });
+    }
 }

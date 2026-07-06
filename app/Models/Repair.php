@@ -54,6 +54,17 @@ class Repair extends Model
         return $this->hasMany(RepairDeposit::class);
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Repair $repair) {
+            $repair->deposits()->each(fn ($d) => $d->delete());
+        });
+
+        static::restoring(function (Repair $repair) {
+            $repair->deposits()->onlyTrashed()->each(fn ($d) => $d->restore());
+        });
+    }
+
     public function getTotalDepositedAttribute(): int
     {
         return $this->deposits()->sum('total_deposit');
