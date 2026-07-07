@@ -20,7 +20,8 @@ class DepositCuttingResultService extends BaseService
 
     public function paginateGrouped(int $perPage = 15, string $search = null, string $brandId = null): LengthAwarePaginator
     {
-        $query = $this->model->with(['cuttingDistribution.cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size']);
+        $query = $this->model->with(['cuttingDistribution.cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size'])
+            ->whereHas('cuttingDistribution.cuttingResult.preOrder', fn ($q) => $q->whereNull('completed_date'));
 
         if ($search) {
             $query->where(function ($q) use ($search) {

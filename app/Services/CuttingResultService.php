@@ -15,7 +15,8 @@ class CuttingResultService extends BaseService
 
     public function paginate(int $perPage = 15, string $search = null, string $brandId = null): LengthAwarePaginator
     {
-        $query = $this->model->with(['preOrder', 'brand', 'article', 'size']);
+        $query = $this->model->with(['preOrder', 'brand', 'article', 'size'])
+            ->whereHas('preOrder', fn ($q) => $q->whereNull('completed_date'));
 
         if ($search) {
             $query->where('name', 'LIKE', "%{$search}%")->orWhere(DB::raw("LOWER(name)"), 'LIKE', DB::raw("LOWER('%{$search}%')"));
