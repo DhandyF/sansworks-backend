@@ -18,6 +18,19 @@ class PreOrderResource extends JsonResource
             'pre_order_date' => $this->pre_order_date?->toIso8601String(),
             'deadline_date' => $this->deadline_date?->toIso8601String(),
             'total_pcs' => $this->total_pcs,
+            'status' => $this->when($this->relationLoaded('shipments'), function () {
+                $totalShipped = $this->shipments->sum('total_shipment');
+                if ($this->total_pcs > 0 && $totalShipped >= $this->total_pcs) {
+                    return 'done';
+                }
+                $deadlineDate = $this->deadline_date?->format('Y-m-d');
+                $today = now()->format('Y-m-d');
+                if ($deadlineDate && $today > $deadlineDate && $totalShipped < $this->total_pcs) {
+                    return 'overdue';
+                }
+                return 'in_progress';
+            }),
+            'completed_date' => $this->completed_date?->toIso8601String(),
             'cut_qty' => $this->when($this->relationLoaded('cuttingResults'), fn () => (int) min($this->total_pcs, $this->cuttingResults->sum('total_cutting'))),
             'excess_cutting' => $this->when($this->relationLoaded('cuttingResults'), fn () => (float) $this->cuttingResults->sum('excess_cutting')),
             'remaining' => $this->when($this->relationLoaded('cuttingResults'), fn () => max(0, $this->total_pcs - (int) $this->cuttingResults->sum('total_cutting'))),

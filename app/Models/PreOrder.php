@@ -20,6 +20,7 @@ class PreOrder extends Model
         'name',
         'pre_order_date',
         'deadline_date',
+        'completed_date',
         'total_pcs',
     ];
 
@@ -28,6 +29,7 @@ class PreOrder extends Model
         return [
             'pre_order_date' => 'date',
             'deadline_date' => 'date',
+            'completed_date' => 'date',
         ];
     }
 

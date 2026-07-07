@@ -34,11 +34,14 @@ class BrandDetailController extends Controller
                 $status = 'overdue';
             }
 
+            $completedDate = $group->max('completed_date');
+
             return [
                 'id' => $first->id,
                 'name' => $first->name,
                 'pre_order_date' => $first->pre_order_date?->toIso8601String(),
                 'deadline_date' => $first->deadline_date?->toIso8601String(),
+                'completed_date' => $completedDate instanceof \Carbon\Carbon ? $completedDate->toIso8601String() : $completedDate,
                 'total_pcs' => (int) $totalPcs,
                 'cut_qty' => (int) $cutQty,
                 'cutting_remaining' => (int) ($totalPcs - $cutQty),

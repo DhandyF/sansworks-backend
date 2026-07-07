@@ -35,19 +35,23 @@ class ShipmentService extends BaseService
 
     public function create(array $data): Shipment
     {
-        return $this->model->create($data);
+        $shipment = $this->model->create($data);
+        $this->updatePreOrderCompletion($data['pre_order_id']);
+        return $shipment;
     }
 
     public function update(string $id, array $data): Shipment
     {
         $shipment = $this->model->findOrFail($id);
         $oldData = $shipment->toArray();
+        $preOrderId = $shipment->pre_order_id;
 
         $shipment->update($data);
         $updatedRecord = $shipment->fresh();
-        
+
         $this->logUpdate($oldData, $updatedRecord->toArray());
-        
+        $this->updatePreOrderCompletion($preOrderId);
+
         return $updatedRecord;
     }
 
@@ -60,9 +64,39 @@ class ShipmentService extends BaseService
     {
         $shipment = $this->model->findOrFail($id);
         $recordData = $shipment->toArray();
-        
+        $preOrderId = $shipment->pre_order_id;
+
         $shipment->delete();
-        
+
         $this->logDelete($recordData);
+        $this->updatePreOrderCompletion($preOrderId);
+    }
+
+    public function restore(string $id): \Illuminate\Database\Eloquent\Model
+    {
+        $shipment = $this->model->withTrashed()->findOrFail($id);
+        $shipment->restore();
+
+        $this->getActivityLogService()->log(
+            $this->getSubjectType() . '.restored',
+            $this->getSubjectType(),
+            $shipment->id,
+            $shipment->toArray()
+        );
+
+        $this->updatePreOrderCompletion($shipment->pre_order_id);
+
+        return $shipment;
+    }
+
+    private function updatePreOrderCompletion(string $preOrderId): void
+    {
+        $preOrder = \App\Models\PreOrder::withoutTrashed()->with('shipments')->findOrFail($preOrderId);
+        $totalShipped = $preOrder->shipments->sum('total_shipment');
+        $isDone = $preOrder->total_pcs > 0 && $totalShipped >= $preOrder->total_pcs;
+
+        $preOrder->update([
+            'completed_date' => $isDone ? ($preOrder->completed_date ?? now()->toDateString()) : null,
+        ]);
     }
 }
