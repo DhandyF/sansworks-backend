@@ -26,6 +26,7 @@ class PreOrderResource extends JsonResource
                 'id' => $cr->id,
                 'total_cutting' => (int) $cr->total_cutting,
                 'excess_cutting' => (float) ($cr->excess_cutting ?? 0),
+                'remaining' => (int) ($cr->remaining ?? 0),
                 'cutting_date' => $cr->cutting_date?->toIso8601String(),
             ])->values()->all()),
             'shipments' => $this->when($this->relationLoaded('shipments'), fn () => $this->shipments->map(fn ($s) => [
