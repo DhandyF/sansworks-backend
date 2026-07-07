@@ -106,10 +106,43 @@ class CuttingResultService extends BaseService
     public function delete(string $id): void
     {
         $cuttingResult = $this->model->findOrFail($id);
+        $preOrderId = $cuttingResult->pre_order_id;
+        $articleId = $cuttingResult->article_id;
+        $sizeId = $cuttingResult->size_id;
         $recordData = $cuttingResult->toArray();
-        
+
         $cuttingResult->delete();
-        
+
+        $this->recalculateExcessCutting($preOrderId, $articleId, $sizeId);
+
         $this->logDelete($recordData);
+    }
+
+    private function recalculateExcessCutting(string $preOrderId, string $articleId, string $sizeId): void
+    {
+        $preOrder = \App\Models\PreOrder::findOrFail($preOrderId);
+        $totalPcs = $preOrder->total_pcs;
+
+        $results = $this->model
+            ->where('pre_order_id', $preOrderId)
+            ->where('article_id', $articleId)
+            ->where('size_id', $sizeId)
+            ->orderBy('created_at')
+            ->get();
+
+        $cumulative = 0;
+        foreach ($results as $result) {
+            $available = max(0, $totalPcs - $cumulative);
+            $newExcess = max(0, $result->total_cutting - $available);
+            $distributed = $result->distributions()->sum('total_cutting');
+            $newRemaining = max(0, $result->total_cutting - $newExcess - $distributed);
+
+            $result->update([
+                'excess_cutting' => $newExcess,
+                'remaining' => $newRemaining,
+            ]);
+
+            $cumulative += ($result->total_cutting - $newExcess);
+        }
     }
 }
