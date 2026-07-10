@@ -17,7 +17,7 @@ class DepositCuttingResultController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return DepositCuttingResultGroupedResource::collection($this->service->paginateGrouped(
+        return DepositCuttingResultResource::collection($this->service->paginate(
             $request->integer('per_page', 15),
             $request->query('search'),
             $request->query('brand_filter')

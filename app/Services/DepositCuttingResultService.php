@@ -15,7 +15,23 @@ class DepositCuttingResultService extends BaseService
 
     public function paginate(int $perPage = 15, string $search = null, string $brandId = null): LengthAwarePaginator
     {
-        return $this->paginateGrouped($perPage, $search, $brandId);
+        $query = $this->model->with(['cuttingDistribution.cuttingResult.preOrder', 'tailor', 'brand', 'article', 'size'])
+            ->whereHas('cuttingDistribution.cuttingResult.preOrder', fn ($q) => $q->whereNull('completed_date'));
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ILIKE', "%{$search}%")
+                    ->orWhereHas('tailor', fn ($sq) => $sq->where('name', 'ILIKE', "%{$search}%"))
+                    ->orWhereHas('brand', fn ($sq) => $sq->where('name', 'ILIKE', "%{$search}%"))
+                    ->orWhereHas('article', fn ($sq) => $sq->where('name', 'ILIKE', "%{$search}%"));
+            });
+        }
+
+        if ($brandId) {
+            $query->where('brand_id', $brandId);
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
     public function paginateGrouped(int $perPage = 15, string $search = null, string $brandId = null): LengthAwarePaginator
@@ -251,6 +267,9 @@ class DepositCuttingResultService extends BaseService
                 'status' => $status,
                 'quality_notes' => $data['quality_notes'] ?? null,
                 'notes' => $data['notes'] ?? null,
+                'charge_amount' => $data['charge_amount'] ?? 0,
+                'charge_percent' => $data['charge_percent'] ?? null,
+                'default_charge_per_pcs' => $data['default_charge_per_pcs'] ?? null,
             ]);
 
             if ($totalAllDeposits >= $dist->total_cutting) {

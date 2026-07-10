@@ -21,6 +21,9 @@ class StoreDepositCuttingResultBatchRequest extends FormRequest
             'deposit_date' => ['required', 'date'],
             'quality_notes' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'charge_amount' => ['nullable', 'numeric', 'min:0'],
+            'charge_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'default_charge_per_pcs' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

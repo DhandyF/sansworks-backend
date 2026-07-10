@@ -26,6 +26,9 @@ class DepositCuttingResult extends Model
         'status',
         'quality_notes',
         'notes',
+        'charge_amount',
+        'charge_percent',
+        'default_charge_per_pcs',
     ];
 
     protected function casts(): array

@@ -59,6 +59,7 @@ class PayslipController extends Controller
         $grandRepairQty = collect($grouped)->sum('repair_qty');
         $grandQty = collect($grouped)->sum('total_qty');
         $grandRepairCharges = collect($grouped)->sum('repair_charges');
+        $grandCuttingDepositCharges = collect($grouped)->sum('cutting_deposit_charges');
 
         $periodLabel = $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y');
         if ($startDate->equalTo($endDate)) {
@@ -93,7 +94,8 @@ class PayslipController extends Controller
                 'total_qty' => $grandQty,
                 'earnings' => round($grandTotal, 2),
                 'repair_charges' => round($grandRepairCharges, 2),
-                'net_total' => round($grandTotal - $grandRepairCharges, 2),
+                'cutting_deposit_charges' => round($grandCuttingDepositCharges, 2),
+                'net_total' => round($grandTotal - $grandRepairCharges - $grandCuttingDepositCharges, 2),
             ],
         ]);
     }
@@ -170,6 +172,7 @@ class PayslipController extends Controller
             $prodQty = 0;
             $prodTotalPrice = 0;
             $cuttingPricePerPcs = 0;
+            $cuttingDepositCharges = 0;
 
             if ($prodGroup) {
                 foreach ($prodGroup as $dep) {
@@ -186,6 +189,7 @@ class PayslipController extends Controller
                     if ($qty > 0 && !empty($dep->cutting_price_per_pcs)) {
                         $cuttingPricePerPcs = (float) $dep->cutting_price_per_pcs;
                     }
+                    $cuttingDepositCharges += (float) ($dep->charge_amount ?? 0);
                 }
             }
 
@@ -214,6 +218,7 @@ class PayslipController extends Controller
                 'cutting_price_per_pcs' => $cuttingPricePerPcs,
                 'earnings' => round($prodTotalPrice, 2),
                 'repair_charges' => round($repairCharges, 2),
+                'cutting_deposit_charges' => round($cuttingDepositCharges, 2),
             ];
         }
 
@@ -251,6 +256,7 @@ class PayslipController extends Controller
             $prodQty = 0;
             $prodTotalPrice = 0;
             $cuttingPricePerPcs = 0;
+            $cuttingDepositCharges = 0;
 
             if ($prodGroup) {
                 foreach ($prodGroup as $dep) {
@@ -264,6 +270,7 @@ class PayslipController extends Controller
                     if ($qty > 0 && !empty($dep->cutting_price_per_pcs)) {
                         $cuttingPricePerPcs = (float) $dep->cutting_price_per_pcs;
                     }
+                    $cuttingDepositCharges += (float) ($dep->charge_amount ?? 0);
                 }
             }
 
@@ -292,6 +299,7 @@ class PayslipController extends Controller
                 'cutting_price_per_pcs' => $cuttingPricePerPcs,
                 'earnings' => round($prodTotalPrice, 2),
                 'repair_charges' => round($repairCharges, 2),
+                'cutting_deposit_charges' => round($cuttingDepositCharges, 2),
             ];
         }
 
