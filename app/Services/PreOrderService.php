@@ -86,14 +86,10 @@ class PreOrderService extends BaseService
 
     private function generateName(string $brandId): string
     {
-        $now = now();
-        $month = $now->month;
-        $year = $now->year;
+        $month = now()->month;
 
         $count = $this->model
             ->where('brand_id', $brandId)
-            ->whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
             ->distinct()
             ->count('name');
 
