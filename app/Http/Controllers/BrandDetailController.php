@@ -12,7 +12,7 @@ class BrandDetailController extends Controller
     {
         $brand = Brand::findOrFail($id);
 
-        $preOrders = \App\Models\PreOrder::with(['brand', 'article', 'size', 'cuttingResults.distributions.deposits'])
+        $preOrders = \App\Models\PreOrder::with(['brand', 'article', 'size', 'cuttingResults.distributions.deposits', 'shipments'])
             ->where('brand_id', $id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -23,6 +23,7 @@ class BrandDetailController extends Controller
             $cutQty = $group->sum(fn ($po) => $po->cuttingResults->sum('total_cutting'));
             $totalDistributed = $group->sum(fn ($po) => $po->cuttingResults->flatMap->distributions->sum('total_cutting'));
             $totalDeposited = $group->sum(fn ($po) => $po->cuttingResults->flatMap->distributions->flatMap->deposits->sum('total_sewing_result'));
+            $totalShipped = $group->sum(fn ($po) => $po->shipments->sum('total_shipment'));
 
             $deadlineDate = $first->deadline_date?->format('Y-m-d');
             $today = now()->format('Y-m-d');
@@ -47,6 +48,7 @@ class BrandDetailController extends Controller
                 'cutting_remaining' => (int) ($totalPcs - $cutQty),
                 'distributed_qty' => (int) $totalDistributed,
                 'deposited_qty' => (int) $totalDeposited,
+                'shipped_qty' => (int) $totalShipped,
                 'status' => $status,
             ];
         })->values();
